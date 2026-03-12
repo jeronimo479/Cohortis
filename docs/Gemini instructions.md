@@ -136,7 +136,27 @@ data class Party(
 
 # 9. Settings
 
-9.1 `SettingsActivity` provide 'created by Jeronimo', the current date & time, and the software version.  
+9.1 `SettingsActivity` provide 'created by Jeronimo', the build date & time using yyyy-mm-dd HH:MM:SS, and the software version.  
+```
+app/build.gradle:
+android {
+    defaultConfig {
+        def df = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+        df.setTimeZone(TimeZone.getDefault())   // optional: use your local timezone
+
+        buildConfigField(
+            "String",
+            "BUILD_TIMESTAMP",
+            "\"${df.format(new Date())}\""
+        )
+    }
+}
+
+Kotlin:
+val buildInfo = "Build: ${BuildConfig.BUILD_TIMESTAMP}"
+textView.text = buildInfo
+```
+
 9.2 *Long-press* on (Master Reset) should open a confirmation dialog that clears all data from the repository and resets the app to its initial state as on first launch.
 
 # 10. Member Library

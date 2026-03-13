@@ -232,5 +232,3 @@ textView.text = buildInfo
 15.13 *Multi‑finger* lift is the termination of a multi‑finger gesture, where non‑primary fingers generate `ACTION_POINTER_UP` events and the final finger generates `ACTION_UP`.
 
 ***
-
-Every sentence in this spec that does not start with '#' should end with two spaces.

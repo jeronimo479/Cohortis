@@ -17,17 +17,33 @@
         android:paddingHorizontal="4dp"
         android:gravity="center_vertical">
 
-        <!-- Column 1: Name -->
-        <TextView
-            android:id="@+id/tvName"
+        <!-- Column 1: Name and Special Star -->
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="2.8"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:text="Name"
-            android:textSize="11sp"
-            android:textStyle="bold" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tvName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="Name"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:id="@+id/ivSpecial"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:layout_marginStart="2dp"
+                android:src="@android:drawable/btn_star_big_on"
+                android:visibility="gone" />
+        </LinearLayout>
 
         <!-- Column 2: Damage Rolls -->
         <TextView
@@ -60,7 +76,7 @@
             android:textSize="11sp"
             android:gravity="center" />
 
-        <!-- Column 5: AC -->
+        <!-- Column 4: AC -->
         <TextView
             android:id="@+id/tvAC"
             android:layout_width="0dp"
@@ -70,7 +86,7 @@
             android:textSize="11sp"
             android:gravity="center" />
 
-        <!-- Column 6: HP Current -->
+        <!-- Column 5: HP Current -->
         <TextView
             android:id="@+id/tvHP"
             android:layout_width="0dp"
@@ -82,14 +98,6 @@
             android:text="10"
             android:textSize="13sp"
             android:textStyle="bold" />
-
-        <ImageView
-            android:id="@+id/ivSpecial"
-            android:layout_width="10dp"
-            android:layout_height="10dp"
-            android:layout_marginStart="1dp"
-            android:src="@android:drawable/btn_star_big_on"
-            android:visibility="gone" />
 
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

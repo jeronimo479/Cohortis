@@ -10,6 +10,7 @@
         android:orientation="vertical"
         android:padding="16dp">
 
+        <!-- Name and PC Switch -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -21,23 +22,23 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:hint="Name"
-                app:expandedHintEnabled="false">
+                android:hint="Name">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="12dp" />
+                    android:inputType="textCapWords" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <CheckBox
+            <com.google.android.material.switchmaterial.SwitchMaterial
                 android:id="@+id/cbIsPC"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="12dp"
                 android:text="PC" />
         </LinearLayout>
 
+        <!-- Class/Level and Attacks Cycle (Only for PC) -->
         <LinearLayout
             android:id="@+id/llClassAttacks"
             android:layout_width="match_parent"
@@ -47,58 +48,63 @@
             android:gravity="center_vertical">
 
             <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilClassLevel"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:hint="Class(es) and Level(s)"
-                app:expandedHintEnabled="false">
+                android:hint="Class(es) and Level(s)">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etClassLevel"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="12dp" />
+                    android:inputType="text" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilAttacksCycle"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAttacksCycle"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="80dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:hint="#"
-                app:expandedHintEnabled="false">
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etAttacksCycle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:focusable="false"
-                    android:clickable="true"
-                    android:cursorVisible="false"
-                    android:gravity="center"
-                    android:text="1"
-                    android:textStyle="bold"
-                    android:padding="12dp" />
-            </com.google.android.material.textfield.TextInputLayout>
+                android:text="1"
+                android:textSize="14sp"
+                app:strokeColor="?attr/colorPrimary" />
         </LinearLayout>
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilHitDice"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        <!-- Hit Dice and Roll Button (Only for Non-PC) -->
+        <LinearLayout
+            android:id="@+id/llHitDice"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:hint="Hit Dice (HD)"
-            android:visibility="gone"
-            app:expandedHintEnabled="false">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etHitDice"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="12dp" />
-        </com.google.android.material.textfield.TextInputLayout>
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:visibility="gone">
 
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Hit Dice (e.g. 2d8+2)">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etHitDice"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRollHd"
+                style="@style/Widget.MaterialComponents.Button.Icon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="ROLL"
+                app:icon="@android:drawable/ic_menu_rotate" />
+        </LinearLayout>
+
+        <!-- HP Fields -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -110,14 +116,12 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:hint="HP Full"
-                app:expandedHintEnabled="false">
+                android:hint="HP Full">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etHpFull"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="number"
-                    android:padding="12dp" />
+                    android:inputType="number" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -126,17 +130,16 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginStart="8dp"
-                android:hint="HP Current"
-                app:expandedHintEnabled="false">
+                android:hint="HP Current">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etHpCurrent"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="number"
-                    android:padding="12dp" />
+                    android:inputType="number" />
             </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
 
+        <!-- THAC0 and AC -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -148,74 +151,73 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:hint="THAC0"
-                app:expandedHintEnabled="false">
+                android:hint="THAC0">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etThac0"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="number"
-                    android:padding="12dp" />
+                    android:inputType="number" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilArmorClass"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:hint="Armor Class (AC)"
-                app:expandedHintEnabled="false">
+                android:layout_marginStart="8dp"
+                android:hint="Armor Class (AC)">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etArmorClass"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="numberSigned"
-                    android:padding="12dp" />
+                    android:inputType="numberSigned" />
             </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
 
+        <!-- Damage Rolls -->
         <com.google.android.material.textfield.TextInputLayout
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:hint="Damage Rolls (e.g. 1d8, 2x2d4+1)"
-            app:expandedHintEnabled="false">
+            android:hint="Damage (e.g. 1d8 | 2d4)">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etDamageRolls"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="12dp" />
+                android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- Special Detections -->
         <com.google.android.material.textfield.TextInputLayout
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:hint="Special Detections"
-            app:expandedHintEnabled="false">
+            android:hint="Special Detections">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etSpecialDetections"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="12dp" />
+                android:inputType="textMultiLine"
+                android:minLines="1"
+                android:maxLines="3" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- Special Attacks -->
         <com.google.android.material.textfield.TextInputLayout
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:hint="Special Attacks"
-            app:expandedHintEnabled="false">
+            android:hint="Special Attacks">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etSpecialAttacks"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="12dp" />
+                android:inputType="textMultiLine"
+                android:minLines="1"
+                android:maxLines="3" />
         </com.google.android.material.textfield.TextInputLayout>
 
     </LinearLayout>

@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.cohortis2"
+    namespace = "com.example.cohortis"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.cohortis2"
+        applicationId = "com.example.cohortis"
         minSdk = 23
         targetSdk = 35
         versionCode = 1

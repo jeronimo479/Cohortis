@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?android:attr/windowBackground"
+    android:padding="20dp">
+
+    <!-- Header: Name -->
+    <TextView
+        android:id="@+id/tvCharName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="?android:attr/textColorPrimary"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Top Row: Inputs (Full and Accumulator) -->
+    <LinearLayout
+        android:id="@+id/llInputRow"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="16dp"
+        android:gravity="center"
+        app:layout_constraintTop_toBottomOf="@id/tvCharName"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Full HP Column -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="HP FULL"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:alpha="0.7" />
+            <Button
+                android:id="@+id/tvHpFullValue"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="8dp"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                app:cornerRadius="12dp"
+                app:strokeWidth="2dp" />
+        </LinearLayout>
+
+        <!-- Accumulator Column -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ACCUMULATOR"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:alpha="0.7" />
+            <Button
+                android:id="@+id/tvAccumulator"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="8dp"
+                android:text="0"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/holo_blue_dark"
+                app:strokeColor="@android:color/holo_blue_dark"
+                app:cornerRadius="12dp"
+                app:strokeWidth="2dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Result Display: Current HP -->
+    <LinearLayout
+        android:id="@+id/llCurrentDisplay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:orientation="vertical"
+        android:gravity="center"
+        app:layout_constraintTop_toBottomOf="@id/llInputRow"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="HP CURRENT"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:alpha="0.8" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/tvHpCurrentValue"
+            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="#F5F5F5"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:minWidth="160dp"
+            android:text="0"
+            android:textColor="?android:attr/colorAccent"
+            android:textSize="42sp"
+            android:textStyle="bold"
+            app:cornerRadius="8dp" />
+    </LinearLayout>
+
+    <!-- Keypad -->
+    <GridLayout
+        android:id="@+id/glKeypad"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:columnCount="3"
+        app:layout_constraintTop_toBottomOf="@id/llCurrentDisplay"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <Button android:id="@+id/btn7" android:text="7" style="?attr/materialButtonOutlinedStyle" android:layout_width="85dp" android:layout_height="60dp" android:layout_margin="4dp"/>
+        <Button android:id="@+id/btn8" android:text="8" style="?attr/materialButtonOutlinedStyle" android:layout_width="85dp" android:layout_height="60dp" android:layout_margin="4dp"/>
+        <Button android:id="@+id/btn9" android:text="9" style="?attr/materialButtonOutlinedStyle" android:layout_width="85dp" android:layout_height="60dp" android:layout_margin="4dp"/>
+
+        <Button android:id="@+id/btn4" android:text="4" style="?attr/materialButtonOutlinedStyle" android:layout_width="85dp" android:layout_height="60dp" android:layout_margin="4dp"/>
+        <Button android:id="@+id/btn5" android:text="5" style="?attr/materialButtonOutlinedStyle" android:layout_width="85dp" android:layout_height="60dp" android:layout_margin="4dp"/>
+        <Button android:id="@+id/btn6" android:text="6" style="?attr/materialButtonOutlinedStyle" android:layout_width="85dp" android:layout_height="60dp" android:layout_margin="4dp"/>
+
+        <Button android:id="@+id/btn1" android:text="1" style="?attr/materialButtonOutlinedStyle" android:layout_width="85dp" android:layout_height="60dp" android:layout_margin="4dp"/>
+        <Button android:id="@+id/btn2" android:text="2" style="?attr/materialButtonOutlinedStyle" android:layout_width="85dp" android:layout_height="60dp" android:layout_margin="4dp"/>
+        <Button android:id="@+id/btn3" android:text="3" style="?attr/materialButtonOutlinedStyle" android:layout_width="85dp" android:layout_height="60dp" android:layout_margin="4dp"/>
+
+        <Button android:id="@+id/btnMinus" android:text="-" android:layout_width="85dp" android:layout_height="60dp" android:layout_margin="4dp" android:backgroundTint="@android:color/holo_red_dark" android:textColor="@android:color/white" android:textSize="24sp"/>
+        <Button android:id="@+id/btn0" android:text="0" style="?attr/materialButtonOutlinedStyle" android:layout_width="85dp" android:layout_height="60dp" android:layout_margin="4dp"/>
+        <Button android:id="@+id/btnPlus" android:text="+" android:layout_width="85dp" android:layout_height="60dp" android:layout_margin="4dp" android:backgroundTint="@android:color/holo_green_dark" android:textColor="@android:color/white" android:textSize="24sp"/>
+
+        <Button android:id="@+id/btnClear"
+            android:text="CLEAR"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_columnSpan="3"
+            android:layout_margin="4dp"
+            android:layout_gravity="fill_horizontal"
+            android:textColor="@android:color/darker_gray" />
+
+    </GridLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -15,6 +15,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        // Defined for showSettingsDialog in MainActivity.kt
+        buildConfigField("String", "BUILD_TIME", "\"2024-03-13\"")
     }
 
     buildTypes {
@@ -35,6 +38,7 @@ android {
     }
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 }
 

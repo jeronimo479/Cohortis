@@ -1,6 +1,9 @@
 package com.example.cohortis
 
+import android.app.AlertDialog
 import android.graphics.Color
+import android.os.Handler
+import android.os.Looper
 import android.text.Spannable
 import android.text.SpannableString
 import android.text.style.ClickableSpan
@@ -8,6 +11,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.RecyclerView
 import com.example.cohortis.databinding.ItemCharacterBinding
 
@@ -29,20 +33,27 @@ class MemberAdapter(
         val member = members[position]
         holder.binding.apply {
             val isClone = member.cloneTag != 0.toChar()
+            
+            val nameBase = member.name.trim().split(" ").firstOrNull() ?: ""
+            val formattedName = if (nameBase.length > 9) nameBase.take(9) else nameBase
+            
             val displayName = if (isClone) {
-                "${member.cloneTag})${member.name}"
+                "${member.cloneTag})$formattedName"
             } else {
-                member.name
+                formattedName
             }
             
             tvName.text = displayName
             
+            val defaultNameColor = tvName.textColors.defaultColor
+            tvName.setTextColor(if (member.hpCurrent <= 0) Color.GRAY else defaultNameColor)
+            
             if (member.isPC) {
-                // For PCs, show Attacks in the '#' column if > 1
-                tvAttacks.text = if (member.attacks == "1") "" else member.attacks
+                val classChar = member.classLevels.trim().firstOrNull { it.isLetter() } ?: ""
+                val levelDigits = member.classLevels.filter { it.isDigit() }
+                tvAttacks.text = "$classChar$levelDigits"
             } else {
-                // For Monsters, show Hit Dice in the '#' column
-                tvAttacks.text = member.hitDice
+                tvAttacks.text = formatHitDice(member.hitDice)
             }
 
             tvThac0.text = member.thac0.toString()
@@ -51,18 +62,25 @@ class MemberAdapter(
             updateHpDisplay(tvHP, member)
             setupDamageSpannable(tvDamage, member)
             
-            ivSpecial.visibility = if (member.hasSpecial()) View.VISIBLE else View.GONE
+            ivSpecial.visibility = if (member.hasSpecial()) View.VISIBLE else View.INVISIBLE
+            ivSpecial.setOnClickListener {
+                showSpecialSplash(it, member)
+            }
 
             root.setOnLongClickListener {
                 onCharacterLongTapped(member)
                 true
             }
 
+            // Tapping hpCurrent opens the HpModifierDialogFragment
             tvHP.setOnClickListener {
-                if (member.hpCurrent > 0) {
-                    member.hpCurrent--
-                    updateHpDisplay(tvHP, member)
-                    onHpChanged(member)
+                val activity = it.context as? AppCompatActivity
+                activity?.let { act ->
+                    HpModifierDialogFragment.newInstance(member) { updatedMember ->
+                        updateHpDisplay(tvHP, updatedMember)
+                        tvName.setTextColor(if (updatedMember.hpCurrent <= 0) Color.GRAY else defaultNameColor)
+                        onHpChanged(updatedMember)
+                    }.show(act.supportFragmentManager, "hp_modifier")
                 }
             }
 
@@ -71,6 +89,50 @@ class MemberAdapter(
                 true
             }
         }
+    }
+
+    private fun formatHitDice(hd: String): String {
+        if (hd.isBlank()) return ""
+        // Regex to match optional X, mandatory 'd', mandatory Y, optional +/-Z
+        val regex = Regex("""^(\d+)?d(\d+)([+-]\d+)?.*$""")
+        val match = regex.find(hd.trim()) ?: return hd
+        
+        val x = match.groups[1]?.value ?: "1"
+        val y = match.groups[2]?.value ?: ""
+        val zStr = match.groups[3]?.value ?: ""
+        
+        val xPart = if (x == "1") "" else x
+        val zValue = zStr.toIntOrNull() ?: 0
+        val zPart = if (zValue == 0) "" else {
+            if (zValue > 0) "+$zValue" else "$zValue"
+        }
+        
+        return "${xPart}d$y$zPart"
+    }
+
+    private fun showSpecialSplash(view: View, member: Member) {
+        val detection = member.specialDetections ?: ""
+        val attacks = member.specialAttacks ?: ""
+        
+        if (detection.isBlank() && attacks.isBlank()) return
+
+        val msg = StringBuilder()
+
+        if (detection.isNotBlank()) msg.append("Detects: $detection")
+        if (attacks.isNotBlank()) msg.append("\n\nAttacks: $attacks")
+
+        val dialog = AlertDialog.Builder(view.context)
+            .setTitle("${member.name} Special")
+            .setMessage(msg.toString())
+            .create()
+            
+        dialog.show()
+        
+        Handler(Looper.getMainLooper()).postDelayed({
+            if (dialog.isShowing) {
+                dialog.dismiss()
+            }
+        }, 1500)
     }
 
     private fun updateHpDisplay(textView: TextView, member: Member) {

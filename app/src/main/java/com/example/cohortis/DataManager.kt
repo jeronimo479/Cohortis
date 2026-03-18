@@ -57,7 +57,7 @@ class DataManager(context: Context) {
         }
 
     var currentRound: Int
-        get() = prefs.getInt("currentRound", 1)
+        get() = prefs.getInt("currentRound", 0)
         set(value) {
             prefs.edit().putInt("currentRound", value).apply()
         }

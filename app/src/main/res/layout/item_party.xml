@@ -29,17 +29,19 @@
     </LinearLayout>
 
     <!-- Footer descriptions straddling the BOTTOM line -->
+    <!-- Weights must match item_character.xml Column weights -->
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:paddingStart="6dp"
-        android:paddingEnd="6dp"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp"
         app:layout_constraintBottom_toBottomOf="@+id/contentContainer"
         app:layout_constraintTop_toBottomOf="@+id/contentContainer"
         app:layout_constraintStart_toStartOf="@+id/contentContainer"
         app:layout_constraintEnd_toEndOf="@+id/contentContainer">
 
+        <!-- Name Hint -->
         <FrameLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -54,6 +56,7 @@
                 android:paddingHorizontal="2dp" />
         </FrameLayout>
 
+        <!-- Damage Hint -->
         <FrameLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -69,51 +72,40 @@
                 android:paddingHorizontal="2dp" />
         </FrameLayout>
 
-        <FrameLayout
+        <!-- TH0/AC Hints -->
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="0.8">
+            android:layout_weight="1.6"
+            android:orientation="horizontal"
+            android:gravity="center_vertical|end">
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:text="#"
+                android:minWidth="20dp"
+                android:gravity="center"
+                android:text="TH0"
                 android:textSize="8sp"
                 android:textColor="#888888"
                 android:background="?android:attr/windowBackground"
-                android:paddingHorizontal="2dp" />
-        </FrameLayout>
-
-        <FrameLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.7">
+                android:paddingHorizontal="1dp" />
+            <!-- Space matching star width (12dp) + margins (2dp) -->
+            <View
+                android:layout_width="14dp"
+                android:layout_height="1dp" />
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:text="T0"
-                android:textSize="8sp"
-                android:textColor="#888888"
-                android:background="?android:attr/windowBackground"
-                android:paddingHorizontal="2dp" />
-        </FrameLayout>
-
-        <FrameLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.7">
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
+                android:minWidth="20dp"
+                android:gravity="center"
                 android:text="AC"
                 android:textSize="8sp"
                 android:textColor="#888888"
                 android:background="?android:attr/windowBackground"
-                android:paddingHorizontal="2dp" />
-        </FrameLayout>
+                android:paddingHorizontal="1dp" />
+        </LinearLayout>
 
+        <!-- HP Hint -->
         <FrameLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -123,6 +115,22 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:text="HP"
+                android:textSize="8sp"
+                android:textColor="#888888"
+                android:background="?android:attr/windowBackground"
+                android:paddingHorizontal="2dp" />
+        </FrameLayout>
+
+        <!-- LVL Hint -->
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.8">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:text="LVL"
                 android:textSize="8sp"
                 android:textColor="#888888"
                 android:background="?android:attr/windowBackground"

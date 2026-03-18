@@ -23,7 +23,28 @@ data class Member(
         return !specialDetections.isNullOrBlank() || !specialAttacks.isNullOrBlank()
     }
 
+    fun rollHp(): Int {
+        if (hitDice.isBlank()) return hpFull
+        val result = DiceRoller.parseCombo(hitDice)
+        return if (result != null) {
+            val (repeat, expr) = result
+            var total = 0
+            repeat(repeat) {
+                total += DiceRoller.rollDice(expr)
+            }
+            total.coerceAtLeast(1)
+        } else {
+            hpFull
+        }
+    }
+
     fun clone(): Member {
-        return this.copy(id = UUID.randomUUID(), lastToHitRoll = 0)
+        val newHp = rollHp()
+        return this.copy(
+            id = UUID.randomUUID(), 
+            lastToHitRoll = 0,
+            hpFull = newHp,
+            hpCurrent = newHp
+        )
     }
 }

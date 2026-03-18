@@ -76,11 +76,4 @@ object DiceRoller {
             }
         return results
     }
-
-    // Keep legacy function for compatibility if needed, but updated to the new format logic.
-    fun rollDamageSegment(segment: String): String {
-        val detailed = rollDamageSegmentDetailed(segment)
-        if (detailed.isEmpty()) return "[INVALID]"
-        return detailed.joinToString(" ") { "${it.d20}${it.damageExpr}=${it.damageTotal}" }
-    }
 }

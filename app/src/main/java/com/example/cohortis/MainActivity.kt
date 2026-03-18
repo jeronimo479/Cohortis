@@ -20,7 +20,6 @@ import android.view.Window
 import android.widget.ArrayAdapter
 import android.widget.CheckBox
 import android.widget.EditText
-import android.widget.NumberPicker
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -161,47 +160,70 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupRoundCounter() {
         binding.content.tvRoundNumber.text = currentRound.toString()
-        binding.content.roundCounterCard.setOnClickListener {
-            currentRound++
-            if (currentRound > 99) currentRound = 0
-            binding.content.tvRoundNumber.text = currentRound.toString()
-            dataManager.currentRound = currentRound
-            logRoundChange()
-        }
-        binding.content.roundCounterCard.setOnLongClickListener {
-            showRoundPickerDialog()
+        
+        var isLongPressActive = false
+        var startX = 0f
+
+        val roundGestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+                currentRound++
+                if (currentRound > 99) currentRound = 0
+                updateRoundDisplay()
+                logRoundChange("Round $currentRound started")
+                return true
+            }
+
+            override fun onDoubleTap(e: MotionEvent): Boolean {
+                if (currentRound > 0) {
+                    currentRound--
+                    updateRoundDisplay()
+                    logRoundChange("Round decreased to $currentRound")
+                }
+                return true
+            }
+
+            override fun onLongPress(e: MotionEvent) {
+                isLongPressActive = true
+                binding.content.roundCounterCard.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+            }
+        })
+
+        binding.content.roundCounterCard.setOnTouchListener { _, event ->
+            roundGestureDetector.onTouchEvent(event)
+            
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    startX = event.x
+                    isLongPressActive = false
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    if (isLongPressActive) {
+                        val diffX = event.x - startX
+                        if (diffX < -100) { // Slide left threshold
+                            currentRound = 0
+                            updateRoundDisplay()
+                            logRoundChange("Rounds Reset")
+                            Toast.makeText(this@MainActivity, "Round Reset", Toast.LENGTH_SHORT).show()
+                            isLongPressActive = false // Reset only once per press
+                        }
+                    }
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    isLongPressActive = false
+                }
+            }
             true
         }
     }
 
-    private fun logRoundChange() {
-        val time = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-        eventFragment?.addLog("[$time] Round $currentRound started")
+    private fun updateRoundDisplay() {
+        binding.content.tvRoundNumber.text = currentRound.toString()
+        dataManager.currentRound = currentRound
     }
 
-    private fun showRoundPickerDialog() {
-        val picker = NumberPicker(this).apply {
-            minValue = 0
-            maxValue = 99
-            value = currentRound
-        }
-        AlertDialog.Builder(this)
-            .setTitle("Set Round")
-            .setView(picker)
-            .setPositiveButton("Set") { _, _ ->
-                currentRound = picker.value
-                binding.content.tvRoundNumber.text = currentRound.toString()
-                dataManager.currentRound = currentRound
-                logRoundChange()
-            }
-            .setNeutralButton("Reset") { _, _ ->
-                currentRound = 0
-                binding.content.tvRoundNumber.text = currentRound.toString()
-                dataManager.currentRound = currentRound
-                logRoundChange()
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
+    private fun logRoundChange(message: String) {
+        val time = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+        eventFragment?.addLog("[$time] $message")
     }
 
     private fun rollDamage(member: Member, segment: String) {
@@ -276,8 +298,7 @@ class MainActivity : AppCompatActivity() {
             etArmorClass.setText(member.armorClass.toString())
             setupStepper(etArmorClass, btnAcMinus, btnAcPlus, -10, 10)
 
-            var internalAttacks = if (member.attacks.isBlank()) "1" else member.attacks
-            etAttacksCycle.setText(internalAttacks)
+            etAttacksCycle.setText(if (member.attacks.isBlank()) "1" else member.attacks)
 
             etDamageRolls.setText(member.damageRolls)
             etSpecialDetections.setText(member.specialDetections ?: "")
@@ -290,33 +311,6 @@ class MainActivity : AppCompatActivity() {
 
             updateVisibility(member.isPC)
             cbIsPC.setOnCheckedChangeListener { _, isChecked -> updateVisibility(isChecked) }
-
-            val attacksSequence = listOf("1", "3/2", "2")
-            fun cycleAttacks() {
-                val currentIndex = attacksSequence.indexOf(internalAttacks)
-                val nextIndex = if (currentIndex == -1) 0 else (currentIndex + 1) % attacksSequence.size
-                internalAttacks = attacksSequence[nextIndex]
-                etAttacksCycle.setText(internalAttacks)
-            }
-
-            etAttacksCycle.setOnClickListener { cycleAttacks() }
-            
-            val attacksSwipeDetector = GestureDetector(this@MainActivity, object : GestureDetector.SimpleOnGestureListener() {
-                override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
-                    if (e1 == null) return false
-                    val diffY = e1.y - e2.y
-                    if (diffY > 50 && abs(velocityY) > 50) {
-                        cycleAttacks()
-                        return true
-                    }
-                    return false
-                }
-            })
-            etAttacksCycle.setOnTouchListener { v, event ->
-                if (attacksSwipeDetector.onTouchEvent(event)) return@setOnTouchListener true
-                if (event.action == MotionEvent.ACTION_UP) v.performClick()
-                true
-            }
 
             etHpFull.addTextChangedListener(object : TextWatcher {
                 override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -449,7 +443,7 @@ class MainActivity : AppCompatActivity() {
                     activeParties.add(copiedParty)
                     refreshActiveParties()
                     onComplete()
-                    Toast.makeText(this, "Party copied as '$newName'", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Party copied as '${newName}'", Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("Cancel", null)

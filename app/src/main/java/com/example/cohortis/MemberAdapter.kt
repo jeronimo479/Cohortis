@@ -13,19 +13,19 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.RecyclerView
-import com.example.cohortis.databinding.ItemCharacterBinding
+import com.example.cohortis.databinding.ItemMemberBinding
 
 class MemberAdapter(
     private var members: MutableList<Member>,
     private val onHpChanged: (Member) -> Unit,
     private val onDamageTapped: (Member, String) -> Unit,
-    private val onCharacterLongTapped: (Member) -> Unit
+    private val onMemberLongTapped: (Member) -> Unit
 ) : RecyclerView.Adapter<MemberAdapter.MemberViewHolder>() {
 
-    class MemberViewHolder(val binding: ItemCharacterBinding) : RecyclerView.ViewHolder(binding.root)
+    class MemberViewHolder(val binding: ItemMemberBinding) : RecyclerView.ViewHolder(binding.root)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MemberViewHolder {
-        val binding = ItemCharacterBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        val binding = ItemMemberBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return MemberViewHolder(binding)
     }
 
@@ -68,7 +68,7 @@ class MemberAdapter(
             }
 
             root.setOnLongClickListener {
-                onCharacterLongTapped(member)
+                onMemberLongTapped(member)
                 true
             }
 
@@ -85,7 +85,7 @@ class MemberAdapter(
             }
 
             tvHP.setOnLongClickListener {
-                onCharacterLongTapped(member)
+                onMemberLongTapped(member)
                 true
             }
         }
@@ -111,14 +111,14 @@ class MemberAdapter(
     }
 
     private fun showSpecialSplash(view: View, member: Member) {
-        val detection = member.specialDetections ?: ""
+        val detections = member.specialDetections ?: ""
         val attacks = member.specialAttacks ?: ""
         
-        if (detection.isBlank() && attacks.isBlank()) return
+        if (detections.isBlank() && attacks.isBlank()) return
 
         val msg = StringBuilder()
 
-        if (detection.isNotBlank()) msg.append("Detects: $detection")
+        if (detections.isNotBlank()) msg.append("Detects: $detections")
         if (attacks.isNotBlank()) msg.append("\n\nAttacks: $attacks")
 
         val dialog = AlertDialog.Builder(view.context)

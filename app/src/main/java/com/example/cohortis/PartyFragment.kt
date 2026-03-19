@@ -25,20 +25,13 @@ class PartyFragment : Fragment() {
         binding.emptyPartyHeader.setOnClickListener {
             onNewPartyRequested?.invoke()
         }
-        binding.emptyAddMember.setOnClickListener {
-            // Tapping (+) on the empty view doesn't have a specific party,
-            // but we can pass a dummy one or handle it in MainActivity.
-            // For now, let's just trigger the callback if it's set.
-            // Since we don't want to add members to the default empty party, 
-            // we could open the library without a target party.
-        }
     }
 
     fun setupRecyclerView(
         parties: MutableList<Party>,
         onHpChanged: (Member) -> Unit,
         onDamageTapped: (Member, String) -> Unit,
-        onCharacterLongTapped: (Member, Party) -> Unit,
+        onMemberLongTapped: (Member, Party) -> Unit,
         onOpenPartyLibrary: (Party) -> Unit,
         onPartyRenameRequested: (Party) -> Unit,
         onOpenMemberLibrary: (Party) -> Unit,
@@ -51,7 +44,7 @@ class PartyFragment : Fragment() {
             parties, 
             onHpChanged, 
             onDamageTapped, 
-            onCharacterLongTapped,
+            onMemberLongTapped,
             onOpenPartyLibrary,
             onPartyRenameRequested,
             onOpenMemberLibrary
@@ -59,11 +52,7 @@ class PartyFragment : Fragment() {
         binding.rvParties.layoutManager = LinearLayoutManager(context)
         binding.rvParties.adapter = partyAdapter
         
-        // Link the (+) button on the empty state to the library
         binding.emptyAddMember.setOnClickListener {
-            // Requested: Tapping/swiping should NOT add to default empty party.
-            // We'll just open the library in "browse" mode (no target party).
-            // Actually, the user might want to create a party from here.
             onNewPartyRequested()
         }
 

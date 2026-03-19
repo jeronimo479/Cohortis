@@ -28,7 +28,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.example.cohortis.databinding.ActivityMainBinding
-import com.example.cohortis.databinding.DialogEditCharacterBinding
+import com.example.cohortis.databinding.DialogEditMemberBinding
 import com.example.cohortis.databinding.DialogLibraryBinding
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
@@ -105,17 +105,17 @@ class MainActivity : AppCompatActivity() {
         binding.root.post {
             partyFragment?.setupRecyclerView(
                 parties = activeParties,
-                onHpChanged = { char ->
-                    updateAllReferences(char)
+                onHpChanged = { member ->
+                    updateAllReferences(member)
                     refreshActiveParties()
-                    val nameStr = if (char.cloneTag != 0.toChar()) "${char.cloneTag})${char.name}" else char.name
-                    eventFragment?.addLog("$nameStr HP changed to ${char.hpCurrent}")
+                    val nameStr = if (member.cloneTag != 0.toChar()) "${member.cloneTag})${member.name}" else member.name
+                    eventFragment?.addLog("$nameStr HP changed to ${member.hpCurrent}")
                 },
-                onDamageTapped = { char, segment ->
-                    rollDamage(char, segment)
+                onDamageTapped = { member, segment ->
+                    rollDamage(member, segment)
                 },
-                onCharacterLongTapped = { char, party ->
-                    showEditCharacterDialog(char, fromParty = party)
+                onMemberLongTapped = { member: Member, party: Party ->
+                    showEditMemberDialog(member, fromParty = party)
                 },
                 onOpenPartyLibrary = { _ ->
                     showPartyLibraryManager()
@@ -161,7 +161,7 @@ class MainActivity : AppCompatActivity() {
     private fun setupRoundCounter() {
         binding.content.tvRoundNumber.text = currentRound.toString()
         
-        var isLongPressActive = false
+        var isLongPressing = false
         var startX = 0f
 
         val roundGestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
@@ -183,33 +183,39 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onLongPress(e: MotionEvent) {
-                isLongPressActive = true
+                isLongPressing = true
                 binding.content.roundCounterCard.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
             }
         })
 
-        binding.content.roundCounterCard.setOnTouchListener { _, event ->
+        binding.content.roundCounterCard.setOnTouchListener { v, event ->
             roundGestureDetector.onTouchEvent(event)
             
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     startX = event.x
-                    isLongPressActive = false
+                    isLongPressing = false
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    if (isLongPressActive) {
+                    if (isLongPressing) {
                         val diffX = event.x - startX
                         if (diffX < -100) { // Slide left threshold
                             currentRound = 0
                             updateRoundDisplay()
                             logRoundChange("Rounds Reset")
                             Toast.makeText(this@MainActivity, "Round Reset", Toast.LENGTH_SHORT).show()
-                            isLongPressActive = false // Reset only once per press
+                            isLongPressing = false // Resetted
                         }
                     }
                 }
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    isLongPressActive = false
+                MotionEvent.ACTION_UP -> {
+                    if (event.action == MotionEvent.ACTION_UP) {
+                        v.performClick()
+                    }
+                    isLongPressing = false
+                }
+                MotionEvent.ACTION_CANCEL -> {
+                    isLongPressing = false
                 }
             }
             true
@@ -261,24 +267,32 @@ class MainActivity : AppCompatActivity() {
         eventFragment?.addLog(logBuilder)
     }
 
-    private fun setupStepper(valueView: EditText, minusBtn: View, plusBtn: View, min: Int, max: Int) {
+    private fun setupStepper(valueView: EditText, minusBtn: View, plusBtn: View, min: Int, max: Int, onChanged: ((Int) -> Unit)? = null) {
         minusBtn.setOnClickListener {
             val current = valueView.text.toString().toIntOrNull() ?: 0
-            if (current > min) valueView.setText((current - 1).toString())
+            if (current > min) {
+                val newVal = current - 1
+                valueView.setText(newVal.toString())
+                onChanged?.invoke(newVal)
+            }
         }
         plusBtn.setOnClickListener {
             val current = valueView.text.toString().toIntOrNull() ?: 0
-            if (current < max) valueView.setText((current + 1).toString())
+            if (current < max) {
+                val newVal = current + 1
+                valueView.setText(newVal.toString())
+                onChanged?.invoke(newVal)
+            }
         }
     }
 
-    private fun showEditCharacterDialog(
+    private fun showEditMemberDialog(
         member: Member, 
         fromParty: Party? = null,
         fromLibrary: Boolean = false,
         onChanged: (() -> Unit)? = null
     ) {
-        val dialogBinding = DialogEditCharacterBinding.inflate(LayoutInflater.from(this))
+        val dialogBinding = DialogEditMemberBinding.inflate(LayoutInflater.from(this))
         
         dialogBinding.apply {
             etName.setText(member.name)
@@ -286,11 +300,39 @@ class MainActivity : AppCompatActivity() {
             etClassLevel.setText(member.classLevels)
             etHitDice.setText(member.hitDice)
             
-            etHpFull.setText(member.hpFull.toString())
-            setupStepper(etHpFull, btnHpFullMinus, btnHpFullPlus, -9, 300)
-            
-            etHpCurrent.setText(member.hpCurrent.toString())
-            setupStepper(etHpCurrent, btnHpCurrentMinus, btnHpCurrentPlus, -9, 300)
+            // Logic for "Edit Library Member" vs regular edit
+            if (fromLibrary) {
+                llHpFullStepper.visibility = View.GONE
+                npHpFull.visibility = View.VISIBLE
+                llHpCurrentSection.visibility = View.GONE
+                
+                npHpFull.minValue = 1
+                npHpFull.maxValue = 300
+                npHpFull.value = member.hpFull.coerceAtLeast(1)
+            } else {
+                llHpFullStepper.visibility = View.VISIBLE
+                npHpFull.visibility = View.GONE
+                llHpCurrentSection.visibility = View.VISIBLE
+                
+                etHpFull.setText(member.hpFull.toString())
+                tvHpCurrentDisplay.text = member.hpCurrent.toString()
+
+                setupStepper(etHpFull, btnHpFullMinus, btnHpFullPlus, -9, 300) { newVal ->
+                    // Tracking: make hpCurrent track HP Full
+                    tvHpCurrentDisplay.text = newVal.toString()
+                }
+                
+                etHpFull.addTextChangedListener(object : TextWatcher {
+                    override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                    override fun afterTextChanged(s: Editable?) {
+                        if (etHpFull.hasFocus()) {
+                            val newVal = s?.toString() ?: ""
+                            tvHpCurrentDisplay.text = newVal
+                        }
+                    }
+                })
+            }
             
             etThac0.setText(member.thac0.toString())
             setupStepper(etThac0, btnThac0Minus, btnThac0Plus, 0, 20)
@@ -312,21 +354,15 @@ class MainActivity : AppCompatActivity() {
             updateVisibility(member.isPC)
             cbIsPC.setOnCheckedChangeListener { _, isChecked -> updateVisibility(isChecked) }
 
-            etHpFull.addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-                override fun afterTextChanged(s: Editable?) {
-                    if (etHpFull.hasFocus()) {
-                        etHpCurrent.setText(s?.toString() ?: "")
-                    }
-                }
-            })
-
             btnRerollHp.setOnClickListener {
                 val tempMember = member.copy(hitDice = etHitDice.text.toString())
                 val rolled = tempMember.rollHp()
-                etHpFull.setText(rolled.toString())
-                etHpCurrent.setText(rolled.toString())
+                if (fromLibrary) {
+                    npHpFull.value = rolled
+                } else {
+                    etHpFull.setText(rolled.toString())
+                    tvHpCurrentDisplay.text = rolled.toString()
+                }
             }
 
             val hpFullGestureDetector = GestureDetector(this@MainActivity, object : GestureDetector.SimpleOnGestureListener() {
@@ -335,21 +371,31 @@ class MainActivity : AppCompatActivity() {
                     val diffX = e2.x - e1.x
                     val diffY = e2.y - e1.y
                     if (abs(diffX) > abs(diffY) && diffX > 100 && abs(velocityX) > 100) {
-                        etHpCurrent.setText(etHpFull.text.toString())
+                        if (!fromLibrary) {
+                            tvHpCurrentDisplay.text = etHpFull.text.toString()
+                        }
                         return true
                     }
                     return false
                 }
 
                 override fun onDoubleTap(e: MotionEvent): Boolean {
-                    etHpCurrent.setText(etHpFull.text.toString())
+                    if (!fromLibrary) {
+                        tvHpCurrentDisplay.text = etHpFull.text.toString()
+                    }
                     return true
                 }
             })
-            etHpFull.setOnTouchListener { v, event ->
+            
+            val touchListener = View.OnTouchListener { v, event ->
                 hpFullGestureDetector.onTouchEvent(event)
-                false 
+                if (event.action == MotionEvent.ACTION_UP) {
+                    v.performClick()
+                }
+                true
             }
+            
+            etHpFull.setOnTouchListener(touchListener)
         }
 
         val builder = AlertDialog.Builder(this)
@@ -361,8 +407,15 @@ class MainActivity : AppCompatActivity() {
                     isPC = dialogBinding.cbIsPC.isChecked
                     classLevels = dialogBinding.etClassLevel.text.toString()
                     hitDice = dialogBinding.etHitDice.text.toString()
-                    hpCurrent = dialogBinding.etHpCurrent.text.toString().toIntOrNull() ?: hpCurrent
-                    hpFull = dialogBinding.etHpFull.text.toString().toIntOrNull() ?: hpFull
+                    
+                    if (fromLibrary) {
+                        hpFull = dialogBinding.npHpFull.value
+                        hpCurrent = hpFull
+                    } else {
+                        hpFull = dialogBinding.etHpFull.text.toString().toIntOrNull() ?: hpFull
+                        hpCurrent = dialogBinding.tvHpCurrentDisplay.text.toString().toIntOrNull() ?: hpCurrent
+                    }
+                    
                     thac0 = dialogBinding.etThac0.text.toString().toIntOrNull() ?: thac0
                     armorClass = dialogBinding.etArmorClass.text.toString().toIntOrNull() ?: armorClass
                     attacks = dialogBinding.etAttacksCycle.text.toString()
@@ -560,7 +613,7 @@ class MainActivity : AppCompatActivity() {
         if (membersQueue.isEmpty()) {
             var finalPartiesAdded = partiesAdded
             partiesToImport.forEach { imported ->
-                if (partyLibrary.none { it.name.lowercase() == imported.name.lowercase() }) {
+                if (partyLibrary.none { it.name.equals(imported.name, ignoreCase = true) }) {
                     val partyWithNewIds = imported.copy(
                         id = UUID.randomUUID(),
                         members = imported.members.map { it.copy(id = UUID.randomUUID()) }.toMutableList()
@@ -582,7 +635,7 @@ class MainActivity : AppCompatActivity() {
 
         if (existing == null) {
             // No UUID collision. Check for name collision.
-            if (memberLibrary.none { it.name.lowercase() == imported.name.lowercase() }) {
+            if (memberLibrary.none { it.name.equals(imported.name, ignoreCase = true) }) {
                 memberLibrary.add(imported)
                 processImportQueue(membersQueue, partiesToImport, membersAdded + 1, partiesAdded)
             } else {
@@ -652,7 +705,7 @@ class MainActivity : AppCompatActivity() {
             wrapSelectorWheel = false
         }
 
-        val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, memberLibrary.map { it.name })
+        val adapter = ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, memberLibrary.map { it.name })
         libBinding.lvItems.adapter = adapter
 
         val detector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
@@ -692,8 +745,8 @@ class MainActivity : AppCompatActivity() {
                 val pos = libBinding.lvItems.pointToPosition(e.x.toInt(), e.y.toInt())
                 if (pos != -1) {
                     val member = memberLibrary[pos]
-                    showEditCharacterDialog(member, fromLibrary = true, onChanged = {
-                        libBinding.lvItems.adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_list_item_1, memberLibrary.map { it.name })
+                    showEditMemberDialog(member, fromLibrary = true, onChanged = {
+                        libBinding.lvItems.adapter = ArrayAdapter<String>(this@MainActivity, android.R.layout.simple_list_item_1, memberLibrary.map { it.name })
                     })
                 }
             }
@@ -709,7 +762,7 @@ class MainActivity : AppCompatActivity() {
 
         libBinding.btnCreate.setOnClickListener {
             createNewMember {
-                libBinding.lvItems.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, memberLibrary.map { it.name })
+                libBinding.lvItems.adapter = ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, memberLibrary.map { it.name })
             }
         }
 
@@ -717,10 +770,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun addClonesToParty(template: Member, targetParty: Party, count: Int) {
-        val tags = (('a'..'z') + ('0'..'9')).toList()
+        val tags = ('a'..'z').toList() + ('0'..'9').toList()
         var addedCount = 0
         
-        for (i in 0 until count) {
+        repeat(count) {
             val existingTags = targetParty.members
                 .filter { it.name == template.name && it.cloneTag != 0.toChar() }
                 .map { it.cloneTag }
@@ -734,7 +787,7 @@ class MainActivity : AppCompatActivity() {
                 targetParty.members.add(cloned)
                 addedCount++
             } else {
-                break
+                return@repeat
             }
         }
         
@@ -761,7 +814,7 @@ class MainActivity : AppCompatActivity() {
         memberLibrary.add(newMember)
         saveData()
         refreshActiveParties()
-        showEditCharacterDialog(newMember, fromLibrary = true, onChanged = onChanged)
+        showEditMemberDialog(newMember, fromLibrary = true, onChanged = onChanged)
     }
 
     private fun showPartyLibraryManager() {

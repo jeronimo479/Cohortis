@@ -13,7 +13,7 @@ data class Member(
     var hpFull: Int = 1,
     var hpCurrent: Int = 1,
     var attacks: String = "1",
-    var damageRolls: String = "1d8",
+    var damageRolls: String = "",
     var specialDetections: String? = null,
     var specialAttacks: String? = null,
     var cloneTag: Char = 0.toChar(),

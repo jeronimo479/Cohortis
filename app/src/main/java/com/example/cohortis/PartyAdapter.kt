@@ -10,7 +10,7 @@ class PartyAdapter(
     initialParties: MutableList<Party>,
     private val onHpChanged: (Member) -> Unit,
     private val onDamageTapped: (Member, String) -> Unit,
-    private val onCharacterLongTapped: (Member, Party) -> Unit,
+    private val onMemberLongTapped: (Member, Party) -> Unit,
     private val onOpenPartyLibrary: (Party) -> Unit,
     private val onPartyRenameRequested: (Party) -> Unit,
     private val onOpenMemberLibrary: (Party) -> Unit
@@ -30,14 +30,14 @@ class PartyAdapter(
         holder.binding.apply {
             tvPartyName.text = party.name
             
-            val charAdapter = MemberAdapter(
+            val memberAdapter = MemberAdapter(
                 party.members,
                 onHpChanged,
                 onDamageTapped,
-                { member -> onCharacterLongTapped(member, party) }
+                { member -> onMemberLongTapped(member, party) }
             )
-            rvCharacters.layoutManager = LinearLayoutManager(root.context)
-            rvCharacters.adapter = charAdapter
+            rvMembers.layoutManager = LinearLayoutManager(root.context)
+            rvMembers.adapter = memberAdapter
 
             // Tapping party name opens the Party Manager dialog
             tvPartyName.setOnClickListener {

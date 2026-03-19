@@ -38,7 +38,7 @@ class HpModifierDialogFragment : DialogFragment() {
         } else {
             member.name
         }
-        binding.tvCharName.text = displayName
+        binding.tvMemberName.text = displayName
         
         updateHpDisplays()
         updateAccumulatorDisplay()

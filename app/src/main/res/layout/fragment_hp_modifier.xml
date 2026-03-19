@@ -8,7 +8,7 @@
 
     <!-- Header: Name -->
     <TextView
-        android:id="@+id/tvCharName"
+        android:id="@+id/tvMemberName"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:gravity="center"
@@ -27,7 +27,7 @@
         android:orientation="horizontal"
         android:layout_marginTop="16dp"
         android:gravity="center"
-        app:layout_constraintTop_toBottomOf="@id/tvCharName"
+        app:layout_constraintTop_toBottomOf="@id/tvMemberName"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 

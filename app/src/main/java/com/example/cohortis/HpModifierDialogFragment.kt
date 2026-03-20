@@ -13,13 +13,15 @@ class HpModifierDialogFragment : DialogFragment() {
     private val binding get() = _binding!!
 
     private lateinit var member: Member
-    private var accumulator: Int = 0
+    private var isFromEdit: Boolean = false
     private var onApplied: ((Member) -> Unit)? = null
+    private var accumulator: Int = 0
 
     companion object {
-        fun newInstance(member: Member, onApplied: (Member) -> Unit): HpModifierDialogFragment {
+        fun newInstance(member: Member, isFromEdit: Boolean = false, onApplied: (Member) -> Unit): HpModifierDialogFragment {
             val fragment = HpModifierDialogFragment()
             fragment.member = member
+            fragment.isFromEdit = isFromEdit
             fragment.onApplied = onApplied
             return fragment
         }
@@ -40,7 +42,7 @@ class HpModifierDialogFragment : DialogFragment() {
         }
         binding.tvMemberName.text = displayName
         
-        updateHpDisplays()
+        setupBoxes()
         updateAccumulatorDisplay()
 
         // Digits
@@ -73,28 +75,48 @@ class HpModifierDialogFragment : DialogFragment() {
             applyModifier(-accumulator)
         }
 
-        // Tapping the Accumulator pastes the exact value into current HP and dismisses
-        binding.tvAccumulator.setOnClickListener {
-            member.hpCurrent = accumulator
-            onApplied?.invoke(member)
-            dismiss()
-        }
-
-        // Tapping HP Full copies HP Full value into HP Current and dismisses
-        binding.tvHpFullValue.setOnClickListener {
-            member.hpCurrent = member.hpFull
+        // Tapping the Result (Box 3) pastes the exact value into Current HP (and Full if in edit mode)
+        binding.btnBox3.setOnClickListener {
+            if (isFromEdit) {
+                member.hpFull = accumulator
+                member.hpCurrent = accumulator
+            } else {
+                member.hpCurrent = accumulator
+            }
             onApplied?.invoke(member)
             dismiss()
         }
     }
 
-    private fun updateHpDisplays() {
-        binding.tvHpFullValue.text = member.hpFull.toString()
-        binding.tvHpCurrentValue.text = member.hpCurrent.toString()
+    private fun setupBoxes() {
+        if (isFromEdit) {
+            // Row 1: Action Button (Rolls)
+            binding.tvBox1Label.text = "HP ROLLS"
+            binding.btnBox1.text = if (member.hitDice.isBlank()) "None" else member.hitDice
+            binding.btnBox1.setOnClickListener {
+                accumulator = member.rollHp()
+                updateAccumulatorDisplay()
+            }
+
+            // Row 2: Display Only
+            binding.tvBox2Display.text = "${member.hpFull} : HP FULL"
+        } else {
+            // Row 1: Action Button (Quick Heal)
+            binding.tvBox1Label.text = "HP FULL"
+            binding.btnBox1.text = member.hpFull.toString()
+            binding.btnBox1.setOnClickListener {
+                member.hpCurrent = member.hpFull
+                onApplied?.invoke(member)
+                dismiss()
+            }
+
+            // Row 2: Display Only
+            binding.tvBox2Display.text = "${member.hpCurrent} : CURRENT"
+        }
     }
 
     private fun updateAccumulatorDisplay() {
-        binding.tvAccumulator.text = accumulator.toString()
+        binding.btnBox3.text = accumulator.toString()
     }
 
     private fun applyModifier(mod: Int) {

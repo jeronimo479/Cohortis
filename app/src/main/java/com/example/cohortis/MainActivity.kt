@@ -300,38 +300,18 @@ class MainActivity : AppCompatActivity() {
             etClassLevel.setText(member.classLevels)
             etHitDice.setText(member.hitDice)
             
-            // Logic for "Edit Library Member" vs regular edit
-            if (fromLibrary) {
-                llHpFullStepper.visibility = View.GONE
-                npHpFull.visibility = View.VISIBLE
-                llHpCurrentSection.visibility = View.GONE
+            btnEditHpFull.text = member.hpFull.toString()
+            btnEditHpFull.setOnClickListener {
+                // Update hitDice in member from current field value before calling
+                member.hitDice = etHitDice.text.toString()
                 
-                npHpFull.minValue = 1
-                npHpFull.maxValue = 300
-                npHpFull.value = member.hpFull.coerceAtLeast(1)
-            } else {
-                llHpFullStepper.visibility = View.VISIBLE
-                npHpFull.visibility = View.GONE
-                llHpCurrentSection.visibility = View.VISIBLE
-                
-                etHpFull.setText(member.hpFull.toString())
-                tvHpCurrentDisplay.text = member.hpCurrent.toString()
-
-                setupStepper(etHpFull, btnHpFullMinus, btnHpFullPlus, -9, 300) { newVal ->
-                    // Tracking: make hpCurrent track HP Full
-                    tvHpCurrentDisplay.text = newVal.toString()
-                }
-                
-                etHpFull.addTextChangedListener(object : TextWatcher {
-                    override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-                    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-                    override fun afterTextChanged(s: Editable?) {
-                        if (etHpFull.hasFocus()) {
-                            val newVal = s?.toString() ?: ""
-                            tvHpCurrentDisplay.text = newVal
-                        }
-                    }
-                })
+                HpModifierDialogFragment.newInstance(member, isFromEdit = true) { updatedMember ->
+                    // When applied, update button text and optionally Current HP
+                    btnEditHpFull.text = updatedMember.hpFull.toString()
+                    // If you want to keep Current in sync during edit
+                    member.hpFull = updatedMember.hpFull
+                    member.hpCurrent = updatedMember.hpCurrent
+                }.show(supportFragmentManager, "hp_modifier_edit")
             }
             
             etThac0.setText(member.thac0.toString())
@@ -348,54 +328,10 @@ class MainActivity : AppCompatActivity() {
 
             val updateVisibility = { isPC: Boolean ->
                 llClassAttacks.visibility = if (isPC) View.VISIBLE else View.GONE
-                llHitDiceRow.visibility = if (isPC) View.GONE else View.VISIBLE
             }
 
             updateVisibility(member.isPC)
             cbIsPC.setOnCheckedChangeListener { _, isChecked -> updateVisibility(isChecked) }
-
-            btnRerollHp.setOnClickListener {
-                val tempMember = member.copy(hitDice = etHitDice.text.toString())
-                val rolled = tempMember.rollHp()
-                if (fromLibrary) {
-                    npHpFull.value = rolled
-                } else {
-                    etHpFull.setText(rolled.toString())
-                    tvHpCurrentDisplay.text = rolled.toString()
-                }
-            }
-
-            val hpFullGestureDetector = GestureDetector(this@MainActivity, object : GestureDetector.SimpleOnGestureListener() {
-                override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
-                    if (e1 == null) return false
-                    val diffX = e2.x - e1.x
-                    val diffY = e2.y - e1.y
-                    if (abs(diffX) > abs(diffY) && diffX > 100 && abs(velocityX) > 100) {
-                        if (!fromLibrary) {
-                            tvHpCurrentDisplay.text = etHpFull.text.toString()
-                        }
-                        return true
-                    }
-                    return false
-                }
-
-                override fun onDoubleTap(e: MotionEvent): Boolean {
-                    if (!fromLibrary) {
-                        tvHpCurrentDisplay.text = etHpFull.text.toString()
-                    }
-                    return true
-                }
-            })
-            
-            val touchListener = View.OnTouchListener { v, event ->
-                hpFullGestureDetector.onTouchEvent(event)
-                if (event.action == MotionEvent.ACTION_UP) {
-                    v.performClick()
-                }
-                true
-            }
-            
-            etHpFull.setOnTouchListener(touchListener)
         }
 
         val builder = AlertDialog.Builder(this)
@@ -408,13 +344,8 @@ class MainActivity : AppCompatActivity() {
                     classLevels = dialogBinding.etClassLevel.text.toString()
                     hitDice = dialogBinding.etHitDice.text.toString()
                     
-                    if (fromLibrary) {
-                        hpFull = dialogBinding.npHpFull.value
-                        hpCurrent = hpFull
-                    } else {
-                        hpFull = dialogBinding.etHpFull.text.toString().toIntOrNull() ?: hpFull
-                        hpCurrent = dialogBinding.tvHpCurrentDisplay.text.toString().toIntOrNull() ?: hpCurrent
-                    }
+                    // hpFull and hpCurrent might have been updated via the dialog
+                    hpFull = dialogBinding.btnEditHpFull.text.toString().toIntOrNull() ?: hpFull
                     
                     thac0 = dialogBinding.etThac0.text.toString().toIntOrNull() ?: thac0
                     armorClass = dialogBinding.etArmorClass.text.toString().toIntOrNull() ?: armorClass

@@ -23,19 +23,27 @@ data class Member(
         return !specialDetections.isNullOrBlank() || !specialAttacks.isNullOrBlank()
     }
 
+    /**
+     * Rolls for HP based on the hitDice string.
+     * Supports up to three segments separated by '|', e.g. "1d8+2 | 1d4"
+     */
     fun rollHp(): Int {
         if (hitDice.isBlank()) return hpFull
-        val result = DiceRoller.parseCombo(hitDice)
-        return if (result != null) {
-            val (repeat, expr) = result
-            var total = 0
-            repeat(repeat) {
-                total += DiceRoller.rollDice(expr)
+        
+        val segments = hitDice.split("|")
+        var total = 0
+        
+        segments.take(3).forEach { segment ->
+            val result = DiceRoller.parseCombo(segment.trim())
+            if (result != null) {
+                val (repeatCount, expr) = result
+                repeat(repeatCount) {
+                    total += DiceRoller.rollDice(expr)
+                }
             }
-            total.coerceAtLeast(1)
-        } else {
-            hpFull
         }
+        
+        return if (total > 0) total else hpFull
     }
 
     fun clone(): Member {

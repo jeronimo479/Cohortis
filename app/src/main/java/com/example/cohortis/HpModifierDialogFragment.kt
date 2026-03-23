@@ -1,6 +1,11 @@
 package com.example.cohortis
 
+import android.graphics.Color
 import android.os.Bundle
+import android.text.Spannable
+import android.text.SpannableStringBuilder
+import android.text.style.ClickableSpan
+import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,13 +20,20 @@ class HpModifierDialogFragment : DialogFragment() {
     private lateinit var member: Member
     private var isFromEdit: Boolean = false
     private var onApplied: ((Member) -> Unit)? = null
+    private var onRollRequested: ((Member, String) -> Int)? = null
     private var accumulator: Int = 0
 
     companion object {
-        fun newInstance(member: Member, isFromEdit: Boolean = false, onApplied: (Member) -> Unit): HpModifierDialogFragment {
+        fun newInstance(
+            member: Member,
+            isFromEdit: Boolean = false,
+            onRollRequested: ((Member, String) -> Int)? = null,
+            onApplied: (Member) -> Unit
+        ): HpModifierDialogFragment {
             val fragment = HpModifierDialogFragment()
             fragment.member = member
             fragment.isFromEdit = isFromEdit
+            fragment.onRollRequested = onRollRequested
             fragment.onApplied = onApplied
             return fragment
         }
@@ -92,10 +104,16 @@ class HpModifierDialogFragment : DialogFragment() {
         if (isFromEdit) {
             // Row 1: Action Button (Rolls)
             binding.tvBox1Label.text = "HP ROLLS"
-            binding.btnBox1.text = if (member.hitDice.isBlank()) "None" else member.hitDice
-            binding.btnBox1.setOnClickListener {
-                accumulator = member.rollHp()
-                updateAccumulatorDisplay()
+            
+            val rawText = member.hitDice
+            if (rawText.isBlank()) {
+                binding.btnBox1.text = "None"
+                binding.btnBox1.setOnClickListener {
+                    accumulator = 0
+                    updateAccumulatorDisplay()
+                }
+            } else {
+                setupDiceSpannable(rawText)
             }
 
             // Row 2: Display Only
@@ -113,6 +131,65 @@ class HpModifierDialogFragment : DialogFragment() {
             // Row 2: Display Only
             binding.tvBox2Display.text = "${member.hpCurrent} : CURRENT"
         }
+    }
+
+    private fun setupDiceSpannable(rawText: String) {
+        // Robust split handling pipes, commas, and lowercase Ls (often used as pipes)
+        val segments = rawText.split(Regex("\\s*[|l,]\\s*")).filter { it.isNotBlank() }
+        
+        if (segments.size <= 1) {
+            binding.btnBox1.text = rawText
+            binding.btnBox1.setOnClickListener {
+                rollSegment(rawText.trim())
+            }
+            return
+        }
+
+        val builder = SpannableStringBuilder()
+        for (i in segments.indices) {
+            val segmentText = segments[i].trim()
+            val start = builder.length
+            builder.append(segmentText)
+            
+            // Add padding/separator and include it in the clickable span to eliminate dead spots
+            if (i < segments.size - 1) {
+                builder.append("   |   ")
+            }
+            val end = builder.length
+
+            val span = object : ClickableSpan() {
+                override fun onClick(widget: View) {
+                    rollSegment(segmentText)
+                }
+                override fun updateDrawState(ds: android.text.TextPaint) {
+                    super.updateDrawState(ds)
+                    ds.isUnderlineText = false
+                    ds.color = binding.btnBox1.currentTextColor
+                }
+            }
+            builder.setSpan(span, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        
+        binding.btnBox1.text = builder
+        binding.btnBox1.movementMethod = android.text.method.LinkMovementMethod.getInstance()
+        // Clear the standard click listener to let spans handle touches
+        binding.btnBox1.setOnClickListener(null)
+        // Ensure the button is clickable to allow spans to work
+        binding.btnBox1.isClickable = true
+    }
+
+    private fun rollSegment(segment: String) {
+        // Haptic feedback for rolling
+        binding.root.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+        
+        // This function REPLACES (pastes) the accumulator with the result of the roll.
+        // It ensures that tapping a die combo (like d10) inserts only that result into the accumulator.
+        val rollResult = onRollRequested?.invoke(member, segment) 
+            ?: DiceRoller.rollSegmentTotal(segment)
+        
+        accumulator = rollResult
+        if (accumulator > 999) accumulator = 999
+        updateAccumulatorDisplay()
     }
 
     private fun updateAccumulatorDisplay() {

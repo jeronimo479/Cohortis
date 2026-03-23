@@ -9,7 +9,7 @@ import com.example.cohortis.databinding.ItemPartyBinding
 class PartyAdapter(
     initialParties: MutableList<Party>,
     private val onHpChanged: (Member) -> Unit,
-    private val onDamageTapped: (Member, String) -> Unit,
+    private val onDamageTapped: (Member, String) -> Int,
     private val onMemberLongTapped: (Member, Party) -> Unit,
     private val onOpenPartyLibrary: (Party) -> Unit,
     private val onPartyRenameRequested: (Party) -> Unit,

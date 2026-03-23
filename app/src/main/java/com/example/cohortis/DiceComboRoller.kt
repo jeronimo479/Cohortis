@@ -34,7 +34,9 @@ object DiceRoller {
     }
 
     fun parseCombo(combo: String): Pair<Int, DiceExpr>? {
-        val match = comboRegex.matchEntire(combo) ?: return null
+        // Clean the string of all spaces to be backwards compatible with strings like "1 x 2 d 8 + 4"
+        val cleaned = combo.replace(" ", "")
+        val match = comboRegex.matchEntire(cleaned) ?: return null
         val repeatCount = match.groupValues[1].toIntOrNull() ?: 1
         val diceCount = match.groupValues[2].toIntOrNull() ?: 1
         val sides = match.groupValues[3].toInt()
@@ -57,7 +59,8 @@ object DiceRoller {
      */
     fun rollDamageSegmentDetailed(segment: String): List<AttackResult> {
         val results = mutableListOf<AttackResult>()
-        segment.split(Regex("[,\\s]+"))
+        // Split by pipe or comma, but NOT spaces because combos themselves might have spaces (which parseCombo handles)
+        segment.split(Regex("[,|]"))
             .asSequence()
             .map { it.trim() }
             .filter { it.isNotEmpty() }
@@ -75,5 +78,25 @@ object DiceRoller {
                 }
             }
         return results
+    }
+    
+    /**
+     * Rolls a single segment and returns the total sum.
+     */
+    fun rollSegmentTotal(segment: String): Int {
+        var total = 0
+        segment.split(Regex("[,|]"))
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .forEach { combo ->
+                val parsed = parseCombo(combo)
+                if (parsed != null) {
+                    val (repeatCount, expr) = parsed
+                    repeat(repeatCount) {
+                        total += rollDice(expr)
+                    }
+                }
+            }
+        return total
     }
 }

@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Dice Roller"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Full String Preview -->
+    <TextView
+        android:id="@+id/tvFullString"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textSize="16sp"
+        android:layout_marginBottom="16dp"
+        android:textColor="?android:attr/textColorSecondary" />
+
+    <!-- Dice Expression Row -->
+    <include
+        android:id="@+id/pickerLayout"
+        layout="@layout/item_dice_page" />
+
+    <!-- Navigation Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="8dp">
+
+        <ImageButton
+            android:id="@+id/btnPrev"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackground"
+            android:src="@android:drawable/ic_media_previous"
+            app:tint="?attr/colorOnSurface" />
+
+        <TextView
+            android:id="@+id/tvPageIndicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="1 / 1"
+            android:textStyle="bold"
+            android:layout_marginHorizontal="16dp" />
+
+        <ImageButton
+            android:id="@+id/btnNext"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackground"
+            android:src="@android:drawable/ic_media_next"
+            app:tint="?attr/colorOnSurface" />
+
+        <Button
+            android:id="@+id/btnComma"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="8dp"
+            android:text=","
+            android:textSize="20sp"
+            android:padding="0dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp" />
+    </LinearLayout>
+
+    <!-- Numeric Keypad -->
+    <GridLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:columnCount="3"
+        android:rowCount="4"
+        android:layout_marginTop="16dp">
+
+        <Button android:id="@+id/btn7" style="?attr/materialButtonOutlinedStyle" android:text="7" android:layout_width="64dp" android:layout_height="64dp" android:insetTop="0dp" android:insetBottom="0dp" android:padding="0dp" />
+        <Button android:id="@+id/btn8" style="?attr/materialButtonOutlinedStyle" android:text="8" android:layout_width="64dp" android:layout_height="64dp" android:insetTop="0dp" android:insetBottom="0dp" android:padding="0dp" />
+        <Button android:id="@+id/btn9" style="?attr/materialButtonOutlinedStyle" android:text="9" android:layout_width="64dp" android:layout_height="64dp" android:insetTop="0dp" android:insetBottom="0dp" android:padding="0dp" />
+
+        <Button android:id="@+id/btn4" style="?attr/materialButtonOutlinedStyle" android:text="4" android:layout_width="64dp" android:layout_height="64dp" android:insetTop="0dp" android:insetBottom="0dp" android:padding="0dp" />
+        <Button android:id="@+id/btn5" style="?attr/materialButtonOutlinedStyle" android:text="5" android:layout_width="64dp" android:layout_height="64dp" android:insetTop="0dp" android:insetBottom="0dp" android:padding="0dp" />
+        <Button android:id="@+id/btn6" style="?attr/materialButtonOutlinedStyle" android:text="6" android:layout_width="64dp" android:layout_height="64dp" android:insetTop="0dp" android:insetBottom="0dp" android:padding="0dp" />
+
+        <Button android:id="@+id/btn1" style="?attr/materialButtonOutlinedStyle" android:text="1" android:layout_width="64dp" android:layout_height="64dp" android:insetTop="0dp" android:insetBottom="0dp" android:padding="0dp" />
+        <Button android:id="@+id/btn2" style="?attr/materialButtonOutlinedStyle" android:text="2" android:layout_width="64dp" android:layout_height="64dp" android:insetTop="0dp" android:insetBottom="0dp" android:padding="0dp" />
+        <Button android:id="@+id/btn3" style="?attr/materialButtonOutlinedStyle" android:text="3" android:layout_width="64dp" android:layout_height="64dp" android:insetTop="0dp" android:insetBottom="0dp" android:padding="0dp" />
+
+        <Button android:id="@+id/btnC" style="?attr/materialButtonOutlinedStyle" android:text="C" android:layout_width="64dp" android:layout_height="64dp" android:insetTop="0dp" android:insetBottom="0dp" android:padding="0dp" />
+        <Button android:id="@+id/btn0" style="?attr/materialButtonOutlinedStyle" android:text="0" android:layout_width="64dp" android:layout_height="64dp" android:insetTop="0dp" android:insetBottom="0dp" android:padding="0dp" />
+        <Button android:id="@+id/btnDel" style="?attr/materialButtonOutlinedStyle" android:text="del" android:layout_width="64dp" android:layout_height="64dp" android:insetTop="0dp" android:insetBottom="0dp" android:padding="0dp" android:textAllCaps="false" android:textSize="14sp" />
+
+    </GridLayout>
+
+</LinearLayout>

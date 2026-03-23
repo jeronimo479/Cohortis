@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="HP Rolls Editor"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Row 1 -->
+    <LinearLayout
+        android:id="@+id/row1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="8dp">
+
+        <NumberPicker android:id="@+id/npN1" android:layout_width="wrap_content" android:layout_height="100dp" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text=" x " />
+        <NumberPicker android:id="@+id/npX1" android:layout_width="wrap_content" android:layout_height="100dp" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text=" d " />
+        <NumberPicker android:id="@+id/npY1" android:layout_width="wrap_content" android:layout_height="100dp" />
+        <Button android:id="@+id/btnSign1" android:layout_width="48dp" android:layout_height="wrap_content" android:text="+" style="?attr/materialButtonOutlinedStyle" />
+        <NumberPicker android:id="@+id/npZ1" android:layout_width="wrap_content" android:layout_height="100dp" />
+    </LinearLayout>
+
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#CCCCCC" android:layout_marginVertical="8dp" />
+
+    <!-- Row 2 -->
+    <LinearLayout
+        android:id="@+id/row2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="8dp"
+        android:alpha="0.5">
+
+        <NumberPicker android:id="@+id/npN2" android:layout_width="wrap_content" android:layout_height="100dp" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text=" x " />
+        <NumberPicker android:id="@+id/npX2" android:layout_width="wrap_content" android:layout_height="100dp" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text=" d " />
+        <NumberPicker android:id="@+id/npY2" android:layout_width="wrap_content" android:layout_height="100dp" />
+        <Button android:id="@+id/btnSign2" android:layout_width="48dp" android:layout_height="wrap_content" android:text="+" style="?attr/materialButtonOutlinedStyle" />
+        <NumberPicker android:id="@+id/npZ2" android:layout_width="wrap_content" android:layout_height="100dp" />
+    </LinearLayout>
+
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#CCCCCC" android:layout_marginVertical="8dp" />
+
+    <!-- Row 3 -->
+    <LinearLayout
+        android:id="@+id/row3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="16dp"
+        android:alpha="0.5">
+
+        <NumberPicker android:id="@+id/npN3" android:layout_width="wrap_content" android:layout_height="100dp" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text=" x " />
+        <NumberPicker android:id="@+id/npX3" android:layout_width="wrap_content" android:layout_height="100dp" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text=" d " />
+        <NumberPicker android:id="@+id/npY3" android:layout_width="wrap_content" android:layout_height="100dp" />
+        <Button android:id="@+id/btnSign3" android:layout_width="48dp" android:layout_height="wrap_content" android:text="+" style="?attr/materialButtonOutlinedStyle" />
+        <NumberPicker android:id="@+id/npZ3" android:layout_width="wrap_content" android:layout_height="100dp" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btnSave"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Apply HP Rolls" />
+
+</LinearLayout>

@@ -12,7 +12,6 @@ data class Member(
     var hitDice: String = "",
     var hpFull: Int = 1,
     var hpCurrent: Int = 1,
-    var attacks: String = "1",
     var damageRolls: String = "",
     var specialDetections: String? = null,
     var specialAttacks: String? = null,

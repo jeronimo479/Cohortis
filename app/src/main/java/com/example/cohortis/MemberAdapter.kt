@@ -18,7 +18,7 @@ import com.example.cohortis.databinding.ItemMemberBinding
 class MemberAdapter(
     private var members: MutableList<Member>,
     private val onHpChanged: (Member) -> Unit,
-    private val onDamageTapped: (Member, String) -> Unit,
+    private val onDamageTapped: (Member, String) -> Int,
     private val onMemberLongTapped: (Member) -> Unit
 ) : RecyclerView.Adapter<MemberAdapter.MemberViewHolder>() {
 
@@ -76,11 +76,15 @@ class MemberAdapter(
             tvHP.setOnClickListener {
                 val activity = it.context as? AppCompatActivity
                 activity?.let { act ->
-                    HpModifierDialogFragment.newInstance(member) { updatedMember ->
-                        updateHpDisplay(tvHP, updatedMember)
-                        tvName.setTextColor(if (updatedMember.hpCurrent <= 0) Color.GRAY else defaultNameColor)
-                        onHpChanged(updatedMember)
-                    }.show(act.supportFragmentManager, "hp_modifier")
+                    HpModifierDialogFragment.newInstance(
+                        member = member,
+                        onRollRequested = { m, s -> onDamageTapped(m, s) },
+                        onApplied = { updatedMember ->
+                            updateHpDisplay(tvHP, updatedMember)
+                            tvName.setTextColor(if (updatedMember.hpCurrent <= 0) Color.GRAY else defaultNameColor)
+                            onHpChanged(updatedMember)
+                        }
+                    ).show(act.supportFragmentManager, "hp_modifier")
                 }
             }
 
@@ -93,20 +97,19 @@ class MemberAdapter(
 
     private fun formatHitDice(hd: String): String {
         if (hd.isBlank()) return ""
-        // Regex to match optional X, mandatory 'd', mandatory Y, optional +/-Z
         val regex = Regex("""^(\d+)?d(\d+)([+-]\d+)?.*$""")
         val match = regex.find(hd.trim()) ?: return hd
-        
+
         val x = match.groups[1]?.value ?: "1"
         val y = match.groups[2]?.value ?: ""
         val zStr = match.groups[3]?.value ?: ""
-        
+
         val xPart = if (x == "1") "" else x
         val zValue = zStr.toIntOrNull() ?: 0
         val zPart = if (zValue == 0) "" else {
             if (zValue > 0) "+$zValue" else "$zValue"
         }
-        
+
         return "${xPart}d$y$zPart"
     }
 
@@ -153,19 +156,20 @@ class MemberAdapter(
     }
 
     private fun setupDamageSpannable(textView: TextView, member: Member) {
-        val fullText = member.damageRolls
-        val spannable = SpannableString(fullText)
-        
-        val segments = fullText.split(Regex("\\s*[|l]\\s*"))
+        val rawText = member.damageRolls
+        if (rawText.isBlank()) {
+            textView.text = ""
+            return
+        }
+
+        val segments = rawText.split(Regex("\\s*[|l]\\s*")).filter { it.isNotBlank() }
+        val displayedText = segments.joinToString("   |   ")
+        val spannable = SpannableString(displayedText)
         
         var currentPos = 0
-        
         for (segment in segments) {
-            if (segment.isEmpty()) continue
-            
-            val start = fullText.indexOf(segment, currentPos)
+            val start = displayedText.indexOf(segment, currentPos)
             if (start == -1) continue
-
             val end = start + segment.length
             
             val clickableSpan = object : ClickableSpan() {
@@ -178,11 +182,9 @@ class MemberAdapter(
                     ds.color = textView.currentTextColor
                 }
             }
-            
             spannable.setSpan(clickableSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
             currentPos = end
         }
-        
         textView.text = spannable
         textView.movementMethod = android.text.method.LinkMovementMethod.getInstance()
     }

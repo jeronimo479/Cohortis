@@ -30,7 +30,7 @@ class PartyFragment : Fragment() {
     fun setupRecyclerView(
         parties: MutableList<Party>,
         onHpChanged: (Member) -> Unit,
-        onDamageTapped: (Member, String) -> Unit,
+        onDamageTapped: (Member, String) -> Int,
         onMemberLongTapped: (Member, Party) -> Unit,
         onOpenPartyLibrary: (Party) -> Unit,
         onPartyRenameRequested: (Party) -> Unit,

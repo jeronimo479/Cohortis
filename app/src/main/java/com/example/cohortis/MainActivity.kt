@@ -232,9 +232,9 @@ class MainActivity : AppCompatActivity() {
         eventFragment?.addLog("[$time] $message")
     }
 
-    private fun rollDamage(member: Member, segment: String) {
+    private fun rollDamage(member: Member, segment: String): Int {
         val attackResults = DiceRoller.rollDamageSegmentDetailed(segment)
-        if (attackResults.isEmpty()) return
+        if (attackResults.isEmpty()) return 0
 
         // Add haptic feedback
         binding.root.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
@@ -265,6 +265,7 @@ class MainActivity : AppCompatActivity() {
         }
         
         eventFragment?.addLog(logBuilder)
+        return attackResults.sumOf { it.damageTotal }
     }
 
     private fun setupStepper(valueView: EditText, minusBtn: View, plusBtn: View, min: Int, max: Int, onChanged: ((Int) -> Unit)? = null) {
@@ -298,20 +299,43 @@ class MainActivity : AppCompatActivity() {
             etName.setText(member.name)
             cbIsPC.isChecked = member.isPC
             etClassLevel.setText(member.classLevels)
+            
             etHitDice.setText(member.hitDice)
+            etHitDice.isFocusable = false
+            etHitDice.setOnClickListener {
+                SwipeDiceRollerDialogFragment.newInstance("Hit Dice", etHitDice.text.toString()) { diceStr ->
+                    etHitDice.setText(diceStr)
+                    member.hitDice = diceStr
+                }.show(supportFragmentManager, "swipe_dice_hitdice")
+            }
             
             btnEditHpFull.text = member.hpFull.toString()
             btnEditHpFull.setOnClickListener {
-                // Update hitDice in member from current field value before calling
                 member.hitDice = etHitDice.text.toString()
-                
-                HpModifierDialogFragment.newInstance(member, isFromEdit = true) { updatedMember ->
-                    // When applied, update button text and optionally Current HP
-                    btnEditHpFull.text = updatedMember.hpFull.toString()
-                    // If you want to keep Current in sync during edit
-                    member.hpFull = updatedMember.hpFull
-                    member.hpCurrent = updatedMember.hpCurrent
-                }.show(supportFragmentManager, "hp_modifier_edit")
+                HpModifierDialogFragment.newInstance(
+                    member = member,
+                    isFromEdit = true,
+                    onRollRequested = { m, s -> rollDamage(m, s) },
+                    onApplied = { updatedMember ->
+                        btnEditHpFull.text = updatedMember.hpFull.toString()
+                        btnEditHpCurrent.text = updatedMember.hpCurrent.toString()
+                        member.hpFull = updatedMember.hpFull
+                        member.hpCurrent = updatedMember.hpCurrent
+                    }
+                ).show(supportFragmentManager, "hp_modifier_edit_full")
+            }
+
+            btnEditHpCurrent.text = member.hpCurrent.toString()
+            btnEditHpCurrent.setOnClickListener {
+                HpModifierDialogFragment.newInstance(
+                    member = member,
+                    isFromEdit = false,
+                    onRollRequested = { m, s -> rollDamage(m, s) },
+                    onApplied = { updatedMember ->
+                        btnEditHpCurrent.text = updatedMember.hpCurrent.toString()
+                        member.hpCurrent = updatedMember.hpCurrent
+                    }
+                ).show(supportFragmentManager, "hp_modifier_edit_current")
             }
             
             etThac0.setText(member.thac0.toString())
@@ -320,9 +344,15 @@ class MainActivity : AppCompatActivity() {
             etArmorClass.setText(member.armorClass.toString())
             setupStepper(etArmorClass, btnAcMinus, btnAcPlus, -10, 10)
 
-            etAttacksCycle.setText(if (member.attacks.isBlank()) "1" else member.attacks)
-
             etDamageRolls.setText(member.damageRolls)
+            etDamageRolls.isFocusable = false
+            etDamageRolls.setOnClickListener {
+                SwipeDiceRollerDialogFragment.newInstance("Damage Rolls", etDamageRolls.text.toString()) { diceStr ->
+                    etDamageRolls.setText(diceStr)
+                    member.damageRolls = diceStr
+                }.show(supportFragmentManager, "swipe_dice_damage")
+            }
+
             etSpecialDetections.setText(member.specialDetections ?: "")
             etSpecialAttacks.setText(member.specialAttacks ?: "")
 
@@ -344,12 +374,11 @@ class MainActivity : AppCompatActivity() {
                     classLevels = dialogBinding.etClassLevel.text.toString()
                     hitDice = dialogBinding.etHitDice.text.toString()
                     
-                    // hpFull and hpCurrent might have been updated via the dialog
                     hpFull = dialogBinding.btnEditHpFull.text.toString().toIntOrNull() ?: hpFull
+                    hpCurrent = dialogBinding.btnEditHpCurrent.text.toString().toIntOrNull() ?: hpCurrent
                     
                     thac0 = dialogBinding.etThac0.text.toString().toIntOrNull() ?: thac0
                     armorClass = dialogBinding.etArmorClass.text.toString().toIntOrNull() ?: armorClass
-                    attacks = dialogBinding.etAttacksCycle.text.toString()
                     damageRolls = dialogBinding.etDamageRolls.text.toString()
                     specialDetections = dialogBinding.etSpecialDetections.text.toString()
                     specialAttacks = dialogBinding.etSpecialAttacks.text.toString()

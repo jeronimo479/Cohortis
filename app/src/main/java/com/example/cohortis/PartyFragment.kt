@@ -12,48 +12,39 @@ class PartyFragment : Fragment() {
     private var _binding: FragmentPartyBinding? = null
     private val binding get() = _binding!!
     private lateinit var partyAdapter: PartyAdapter
-    private var onNewPartyRequested: (() -> Unit)? = null
-    private var onOpenMemberLibrary: ((Party) -> Unit)? = null
+    private var onOpenPartyLibrary: ((Party?) -> Unit)? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentPartyBinding.inflate(inflater, container, false)
         return binding.root
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        binding.emptyPartyHeader.setOnClickListener {
-            onNewPartyRequested?.invoke()
-        }
-    }
-
     fun setupRecyclerView(
         parties: MutableList<Party>,
-        onHpChanged: (Member) -> Unit,
+        onHpChanged: (Member, Int) -> Unit,
         onDamageTapped: (Member, String) -> Int,
         onMemberLongTapped: (Member, Party) -> Unit,
-        onOpenPartyLibrary: (Party) -> Unit,
+        onOpenPartyLibrary: (Party?) -> Unit,
         onPartyRenameRequested: (Party) -> Unit,
         onOpenMemberLibrary: (Party) -> Unit,
         onNewPartyRequested: () -> Unit
     ) {
-        this.onNewPartyRequested = onNewPartyRequested
-        this.onOpenMemberLibrary = onOpenMemberLibrary
+        this.onOpenPartyLibrary = onOpenPartyLibrary
         
         partyAdapter = PartyAdapter(
             parties, 
             onHpChanged, 
             onDamageTapped, 
             onMemberLongTapped,
-            onOpenPartyLibrary,
+            { party -> onOpenPartyLibrary(party) },
             onPartyRenameRequested,
             onOpenMemberLibrary
         )
         binding.rvParties.layoutManager = LinearLayoutManager(context)
         binding.rvParties.adapter = partyAdapter
         
-        binding.emptyAddMember.setOnClickListener {
-            onNewPartyRequested()
+        binding.tvEmptyManageLibrary.setOnClickListener {
+            onOpenPartyLibrary(null)
         }
 
         updateEmptyState(parties)
@@ -67,7 +58,8 @@ class PartyFragment : Fragment() {
     }
 
     private fun updateEmptyState(list: List<Party>) {
-        val visibleParties = list.filter { it.isVisible }
+        // Active parties are those not marked INACTIVE
+        val visibleParties = list.filter { it.status != PartyStatus.INACTIVE }
         if (visibleParties.isEmpty()) {
             binding.emptyPartyBox.visibility = View.VISIBLE
             binding.rvParties.visibility = View.GONE

@@ -2,6 +2,8 @@ package com.example.cohortis
 
 import android.app.AlertDialog
 import android.app.Dialog
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
@@ -60,9 +62,12 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        setSupportActionBar(binding.toolbar)
+        
+        binding.btnSettings.setOnClickListener {
+            showSettingsDialog()
+        }
 
-        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
+        ViewCompat.setOnApplyWindowInsetsListener(binding.mainRoot) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
@@ -78,15 +83,18 @@ class MainActivity : AppCompatActivity() {
     private fun loadData() {
         memberLibrary = dataManager.memberLibrary.apply { sortBy { it.name.lowercase() } }
         partyLibrary = dataManager.partyLibrary.apply { sortBy { it.name.lowercase() } }
-        activeParties = dataManager.activeParties
+        updateActivePartiesList()
         currentRound = dataManager.currentRound
+    }
 
-        if (partyLibrary.isEmpty()) {
-            val defaultParty = Party(name = "Default Party")
-            partyLibrary.add(defaultParty)
-            activeParties.add(defaultParty)
-            saveData()
-        }
+    private fun updateActivePartiesList() {
+        // Only PRIMARY and ACTIVE parties are displayed.
+        // PRIMARY always comes first, then ACTIVE parties sorted alphabetically.
+        activeParties = partyLibrary.asSequence()
+            .filter { it.status == PartyStatus.PRIMARY || it.status == PartyStatus.ACTIVE }
+            .sortedWith(compareByDescending<Party> { it.status == PartyStatus.PRIMARY }
+                .thenBy { it.name.lowercase() })
+            .toMutableList()
     }
 
     private fun saveData() {
@@ -105,11 +113,12 @@ class MainActivity : AppCompatActivity() {
         binding.root.post {
             partyFragment?.setupRecyclerView(
                 parties = activeParties,
-                onHpChanged = { member ->
+                onHpChanged = { member, oldHp ->
                     updateAllReferences(member)
                     refreshActiveParties()
-                    val nameStr = if (member.cloneTag != 0.toChar()) "${member.cloneTag})${member.name}" else member.name
-                    eventFragment?.addLog("$nameStr HP changed to ${member.hpCurrent}")
+                    if (oldHp != member.hpCurrent) {
+                        eventFragment?.addLog("${member.getDisplayName()} hpCurrent $oldHp -> ${member.hpCurrent}")
+                    }
                 },
                 onDamageTapped = { member, segment ->
                     rollDamage(member, segment)
@@ -127,7 +136,7 @@ class MainActivity : AppCompatActivity() {
                     showMemberLibraryManager(party)
                 },
                 onNewPartyRequested = {
-                    showPartyLibraryManager()
+                    createNewParty()
                 }
             )
             refreshActiveParties()
@@ -135,7 +144,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshActiveParties() {
-        activeParties.sortBy { it.name.lowercase() }
+        updateActivePartiesList()
         partyFragment?.updateParties(activeParties)
         saveData()
     }
@@ -236,10 +245,9 @@ class MainActivity : AppCompatActivity() {
         val attackResults = DiceRoller.rollDamageSegmentDetailed(segment)
         if (attackResults.isEmpty()) return 0
 
-        // Add haptic feedback
         binding.root.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
 
-        val nameStr = if (member.cloneTag != 0.toChar()) "${member.cloneTag})${member.name}" else member.name
+        val nameStr = member.getDisplayName()
         
         val logBuilder = SpannableStringBuilder()
         logBuilder.append(nameStr).append(" ")
@@ -303,37 +311,63 @@ class MainActivity : AppCompatActivity() {
             etHitDice.setText(member.hitDice)
             etHitDice.isFocusable = false
             etHitDice.setOnClickListener {
-                SwipeDiceRollerDialogFragment.newInstance("Hit Dice", etHitDice.text.toString()) { diceStr ->
+                val wasEmpty = member.hitDice.isBlank()
+                val oldHpCurrent = member.hpCurrent
+                SwipeDiceRollerDialogFragment.newInstance("Hit Dice", etHitDice.text.toString(), member.isPC) { diceStr ->
                     etHitDice.setText(diceStr)
                     member.hitDice = diceStr
+                    if (wasEmpty && diceStr.isNotBlank()) {
+                        val rolledHp = DiceRoller.rollSegmentTotal(diceStr)
+                        member.hpFull = rolledHp
+                        member.hpCurrent = rolledHp
+                        btnEditHpFull.text = rolledHp.toString()
+                        btnEditHpCurrent.text = rolledHp.toString()
+                        
+                        refreshActiveParties()
+                        if (oldHpCurrent != rolledHp) {
+                            eventFragment?.addLog("${member.getDisplayName()} hpCurrent $oldHpCurrent -> $rolledHp")
+                        }
+                    }
                 }.show(supportFragmentManager, "swipe_dice_hitdice")
             }
             
             btnEditHpFull.text = member.hpFull.toString()
             btnEditHpFull.setOnClickListener {
                 member.hitDice = etHitDice.text.toString()
+                val oldHpCurrent = member.hpCurrent
                 HpModifierDialogFragment.newInstance(
                     member = member,
                     isFromEdit = true,
-                    onRollRequested = { m, s -> rollDamage(m, s) },
+                    stayOpen = true,
+                    onRollRequested = if (member.isPC) ({ m, s -> rollDamage(m, s) }) else null,
                     onApplied = { updatedMember ->
                         btnEditHpFull.text = updatedMember.hpFull.toString()
                         btnEditHpCurrent.text = updatedMember.hpCurrent.toString()
                         member.hpFull = updatedMember.hpFull
                         member.hpCurrent = updatedMember.hpCurrent
+                        refreshActiveParties()
+                        if (oldHpCurrent != updatedMember.hpCurrent) {
+                            eventFragment?.addLog("${member.getDisplayName()} hpCurrent $oldHpCurrent -> ${updatedMember.hpCurrent}")
+                        }
                     }
                 ).show(supportFragmentManager, "hp_modifier_edit_full")
             }
 
             btnEditHpCurrent.text = member.hpCurrent.toString()
             btnEditHpCurrent.setOnClickListener {
+                val oldHpCurrent = member.hpCurrent
                 HpModifierDialogFragment.newInstance(
                     member = member,
                     isFromEdit = false,
-                    onRollRequested = { m, s -> rollDamage(m, s) },
+                    stayOpen = true,
+                    onRollRequested = if (member.isPC) ({ m, s -> rollDamage(m, s) }) else null,
                     onApplied = { updatedMember ->
                         btnEditHpCurrent.text = updatedMember.hpCurrent.toString()
                         member.hpCurrent = updatedMember.hpCurrent
+                        refreshActiveParties()
+                        if (oldHpCurrent != updatedMember.hpCurrent) {
+                            eventFragment?.addLog("${member.getDisplayName()} hpCurrent $oldHpCurrent -> ${updatedMember.hpCurrent}")
+                        }
                     }
                 ).show(supportFragmentManager, "hp_modifier_edit_current")
             }
@@ -347,9 +381,20 @@ class MainActivity : AppCompatActivity() {
             etDamageRolls.setText(member.damageRolls)
             etDamageRolls.isFocusable = false
             etDamageRolls.setOnClickListener {
-                SwipeDiceRollerDialogFragment.newInstance("Damage Rolls", etDamageRolls.text.toString()) { diceStr ->
+                val wasEmpty = member.damageRolls.isBlank()
+                SwipeDiceRollerDialogFragment.newInstance("Damage Rolls", etDamageRolls.text.toString(), member.isPC) { diceStr ->
                     etDamageRolls.setText(diceStr)
                     member.damageRolls = diceStr
+                    // If first time setting damage rolls, and HP rolls are also empty, roll for HP
+                    if (wasEmpty && member.hitDice.isNotBlank() && member.hpFull == 1 && member.hpCurrent == 1) {
+                        val rolledHp = DiceRoller.rollSegmentTotal(member.hitDice)
+                        member.hpFull = rolledHp
+                        member.hpCurrent = rolledHp
+                        btnEditHpFull.text = rolledHp.toString()
+                        btnEditHpCurrent.text = rolledHp.toString()
+                        refreshActiveParties()
+                        eventFragment?.addLog("${member.getDisplayName()} hpCurrent 1 -> $rolledHp")
+                    }
                 }.show(supportFragmentManager, "swipe_dice_damage")
             }
 
@@ -449,11 +494,11 @@ class MainActivity : AppCompatActivity() {
                     val copiedParty = party.copy(
                         id = UUID.randomUUID(),
                         name = newName,
-                        members = party.members.map { it.clone() }.toMutableList()
+                        members = party.members.map { it.clone() }.toMutableList(),
+                        status = PartyStatus.INACTIVE
                     )
                     partyLibrary.add(copiedParty)
                     partyLibrary.sortBy { it.name.lowercase() }
-                    activeParties.add(copiedParty)
                     refreshActiveParties()
                     onComplete()
                     Toast.makeText(this, "Party copied as '${newName}'", Toast.LENGTH_SHORT).show()
@@ -484,24 +529,9 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menu.add(0, 1, 0, "Settings").setIcon(android.R.drawable.ic_menu_preferences).setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            1 -> {
-                showSettingsDialog()
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
-        }
-    }
-
     private fun showSettingsDialog() {
         val titleView = TextView(this).apply {
-            text = "Cohortis\nversion 1.0.0"
+            text = "Cohortis\nversion ${BuildConfig.VERSION_NAME}\nbuild ${BuildConfig.BUILD_TIME}"
             setPadding(60, 40, 60, 0)
             textSize = 14f
             setTextColor(0xFF555555.toInt())
@@ -576,7 +606,8 @@ class MainActivity : AppCompatActivity() {
                 if (partyLibrary.none { it.name.equals(imported.name, ignoreCase = true) }) {
                     val partyWithNewIds = imported.copy(
                         id = UUID.randomUUID(),
-                        members = imported.members.map { it.copy(id = UUID.randomUUID()) }.toMutableList()
+                        members = imported.members.map { it.copy(id = UUID.randomUUID()) }.toMutableList(),
+                        status = PartyStatus.INACTIVE
                     )
                     partyLibrary.add(partyWithNewIds)
                     finalPartiesAdded++
@@ -594,21 +625,16 @@ class MainActivity : AppCompatActivity() {
         val existing = memberLibrary.find { it.id == imported.id }
 
         if (existing == null) {
-            // No UUID collision. Check for name collision.
             if (memberLibrary.none { it.name.equals(imported.name, ignoreCase = true) }) {
                 memberLibrary.add(imported)
                 processImportQueue(membersQueue, partiesToImport, membersAdded + 1, partiesAdded)
             } else {
-                // Name collision, diff UUID. Skip as potential duplicate.
                 processImportQueue(membersQueue, partiesToImport, membersAdded, partiesAdded)
             }
         } else {
-            // UUID collision.
             if (existing == imported) {
-                // Identical records. skip.
                 processImportQueue(membersQueue, partiesToImport, membersAdded, partiesAdded)
             } else {
-                // Structural difference. Ask.
                 AlertDialog.Builder(this)
                     .setTitle("Import Conflict")
                     .setMessage("Member '${imported.name}' (ID: ${imported.id}) has different data than the existing record. Overwrite?")
@@ -674,20 +700,6 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
-                val pos = libBinding.lvItems.pointToPosition(e.x.toInt(), e.y.toInt())
-                if (pos != -1 && targetParty != null) {
-                    val template = memberLibrary[pos]
-                    val count = libBinding.npCloneCount.value
-                    if (count > 0) {
-                        addClonesToParty(template, targetParty, count)
-                    } else {
-                        addMemberByReference(template, targetParty)
-                    }
-                }
-                return true
-            }
-
-            override fun onDoubleTap(e: MotionEvent): Boolean {
                 val pos = libBinding.lvItems.pointToPosition(e.x.toInt(), e.y.toInt())
                 if (pos != -1 && targetParty != null) {
                     val template = memberLibrary[pos]
@@ -795,23 +807,58 @@ class MainActivity : AppCompatActivity() {
                 val cbActive = view.findViewById<CheckBox>(R.id.cbPartyActive)
                 
                 tvName.text = party.name
-                val isCurrentlyActive = activeParties.any { it.id == party.id }
-                cbActive.isChecked = isCurrentlyActive
                 
-                cbActive.setOnClickListener {
-                    if (cbActive.isChecked) {
-                        if (activeParties.none { it.id == party.id }) activeParties.add(party)
-                    } else {
-                        activeParties.removeAll { it.id == party.id }
-                    }
-                    refreshActiveParties()
+                cbActive.isChecked = party.status != PartyStatus.INACTIVE
+                
+                if (party.status == PartyStatus.PRIMARY) {
+                    cbActive.buttonTintList = ColorStateList.valueOf(Color.RED)
+                } else {
+                    cbActive.buttonTintList = null
                 }
-                
+
+                val cbDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+                    override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+                        // Tapping check box toggles active / inactive
+                        if (party.status == PartyStatus.PRIMARY) {
+                            party.status = PartyStatus.INACTIVE
+                        } else {
+                            party.status = if (party.status == PartyStatus.ACTIVE) PartyStatus.INACTIVE else PartyStatus.ACTIVE
+                        }
+                        refreshActiveParties()
+                        notifyDataSetChanged()
+                        return true
+                    }
+
+                    override fun onDoubleTap(e: MotionEvent): Boolean {
+                        // Double tap make it active and Priority (Primary)
+                        partyLibrary.forEach { if (it.status == PartyStatus.PRIMARY) it.status = PartyStatus.ACTIVE }
+                        party.status = PartyStatus.PRIMARY
+                        refreshActiveParties()
+                        notifyDataSetChanged()
+                        cbActive.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                        return true
+                    }
+                })
+
+                cbActive.setOnTouchListener { v, event ->
+                    val handled = cbDetector.onTouchEvent(event)
+                    if (!handled && event.action == MotionEvent.ACTION_UP) {
+                        v.performClick()
+                    }
+                    true
+                }
+
                 tvName.setOnClickListener {
+                    // Tapping party name opens editParty window
                     showPartyEditDialog(party) {
                         notifyDataSetChanged()
                     }
                 }
+                
+                // Clear any other gestures/listeners from parent row or views
+                view.setOnTouchListener(null)
+                view.setOnClickListener(null)
+                tvName.setOnLongClickListener(null)
                 
                 return view
             }
@@ -837,10 +884,9 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton("Create") { _, _ ->
                 val name = input.text.toString().trim()
                 if (name.isNotEmpty()) {
-                    val newParty = Party(name = name)
+                    val newParty = Party(name = name, status = PartyStatus.INACTIVE)
                     partyLibrary.add(newParty)
                     partyLibrary.sortBy { it.name.lowercase() }
-                    activeParties.add(newParty)
                     refreshActiveParties()
                     onAdded?.invoke()
                 } else {

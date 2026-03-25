@@ -20,10 +20,11 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
     private var onDiceEntered: ((String) -> Unit)? = null
     private var initialValue: String = ""
     private var title: String = "Dice Roller"
+    private var isPC: Boolean = false
 
     private val diceSegments = mutableListOf<DiceSegment>()
     private var currentIndex = 0
-    private var selectedField = Field.Y
+    private var selectedField = Field.X
     private var isFirstDigitAfterSelection = true
 
     enum class Field { N, X, Y, Z }
@@ -31,17 +32,18 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
     data class DiceSegment(
         var n: Int = 1,
         var x: Int = 1,
-        var y: Int = 6,
+        var y: Int = 8,
         var z: Int = 0,
         var isPositive: Boolean = true,
         var isFollowedByComma: Boolean = false
     )
 
     companion object {
-        fun newInstance(title: String, initialValue: String, onDiceEntered: (String) -> Unit): SwipeDiceRollerDialogFragment {
+        fun newInstance(title: String, initialValue: String, isPC: Boolean = false, onDiceEntered: (String) -> Unit): SwipeDiceRollerDialogFragment {
             val fragment = SwipeDiceRollerDialogFragment()
             fragment.title = title
             fragment.initialValue = initialValue
+            fragment.isPC = isPC
             fragment.onDiceEntered = onDiceEntered
             return fragment
         }
@@ -61,7 +63,8 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
             diceSegments.add(DiceSegment())
         }
         
-        selectedField = Field.Y
+        // Defaults: X is active for non-PCs, Y is active for PCs.
+        selectedField = if (isPC) Field.Y else Field.X
         isFirstDigitAfterSelection = true
 
         setupSelectionListeners()
@@ -93,7 +96,7 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
             diceSegments[currentIndex].isFollowedByComma = true
             diceSegments.add(currentIndex + 1, DiceSegment())
             currentIndex++
-            selectField(Field.Y)
+            selectField(if (isPC) Field.Y else Field.X)
         }
 
         binding.tvPageIndicator.setOnLongClickListener {
@@ -101,7 +104,7 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
             it.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
             diceSegments.add(0, DiceSegment())
             currentIndex = 0
-            selectField(Field.Y)
+            selectField(if (isPC) Field.Y else Field.X)
             true
         }
     }
@@ -126,7 +129,7 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
         binding.btn0.setOnLongClickListener {
             it.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
             diceSegments[currentIndex] = DiceSegment()
-            selectField(Field.Y)
+            selectField(if (isPC) Field.Y else Field.X)
             true
         }
 
@@ -144,7 +147,7 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
             if (currentIndex > 0) {
                 saveChangesAndDismiss(false)
                 currentIndex--
-                selectField(Field.Y)
+                selectField(if (isPC) Field.Y else Field.X)
             }
         }
         
@@ -152,7 +155,7 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
             it.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
             saveChangesAndDismiss(false)
             diceSegments.add(currentIndex, DiceSegment())
-            selectField(Field.Y)
+            selectField(if (isPC) Field.Y else Field.X)
             true
         }
 
@@ -162,7 +165,7 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
                 diceSegments.add(DiceSegment())
             }
             currentIndex++
-            selectField(Field.Y)
+            selectField(if (isPC) Field.Y else Field.X)
         }
         
         binding.btnNext.setOnLongClickListener {
@@ -170,7 +173,7 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
             saveChangesAndDismiss(false)
             diceSegments.add(currentIndex + 1, DiceSegment())
             currentIndex++
-            selectField(Field.Y)
+            selectField(if (isPC) Field.Y else Field.X)
             true
         }
     }
@@ -234,7 +237,7 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
         } else {
             diceSegments[0] = DiceSegment()
         }
-        selectField(Field.Y)
+        selectField(if (isPC) Field.Y else Field.X)
     }
 
     private fun updateUI() {
@@ -294,8 +297,7 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
                 BackgroundColorSpan(Color.parseColor("#FFFF00")), // Yellow highlight
                 highlightStart,
                 highlightEnd,
-                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
+                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
         binding.tvFullString.text = spannable
     }

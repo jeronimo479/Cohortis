@@ -18,6 +18,21 @@ data class Member(
     var cloneTag: Char = 0.toChar(),
     var lastToHitRoll: Int = 0
 ) {
+    /**
+     * Returns the first name only, optionally with the clone tag prefix.
+     * Use this for general display purposes (list, logs, etc.)
+     */
+    fun getDisplayName(): String {
+        val nameBase = name.trim().split(" ").firstOrNull() ?: ""
+        // Keep the 9-char limit if desired for the UI, or just return first name.
+        // User said "only Zendra", so first name part is key.
+        return if (cloneTag != 0.toChar()) {
+            "$cloneTag)$nameBase"
+        } else {
+            nameBase
+        }
+    }
+
     fun hasSpecial(): Boolean {
         return !specialDetections.isNullOrBlank() || !specialAttacks.isNullOrBlank()
     }

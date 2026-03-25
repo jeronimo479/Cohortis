@@ -82,6 +82,7 @@ object DiceRoller {
     
     /**
      * Rolls a single segment and returns the total sum.
+     * For HP rolls, the minimum result is 1.
      */
     fun rollSegmentTotal(segment: String): Int {
         var total = 0
@@ -97,6 +98,6 @@ object DiceRoller {
                     }
                 }
             }
-        return total
+        return if (total < 1) 1 else total
     }
 }

@@ -29,7 +29,6 @@
     </LinearLayout>
 
     <!-- Footer descriptions straddling the BOTTOM line -->
-    <!-- Weights must match item_member.xml Column weights -->
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -89,7 +88,6 @@
                 android:textColor="#888888"
                 android:background="?android:attr/windowBackground"
                 android:paddingHorizontal="1dp" />
-            <!-- Space matching star width (12dp) + margins (2dp) -->
             <View
                 android:layout_width="14dp"
                 android:layout_height="1dp" />
@@ -154,14 +152,6 @@
         app:layout_constraintBottom_toTopOf="@+id/contentContainer"
         app:layout_constraintStart_toStartOf="@+id/contentContainer"
         app:layout_constraintTop_toTopOf="@+id/contentContainer">
-
-        <ImageView
-            android:id="@+id/ivDropdown"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:layout_marginEnd="2dp"
-            android:src="@drawable/ic_dropdown_arrow"
-            android:tint="?android:attr/textColorSecondary" />
 
         <TextView
             android:id="@+id/tvPartyName"

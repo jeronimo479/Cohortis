@@ -29,15 +29,13 @@
             android:textSize="11sp"
             android:textStyle="bold" />
 
-        <!-- Column 2: Damage Rolls (Maximized weight and added spacing for easier selection) -->
-        <TextView
-            android:id="@+id/tvDamage"
+        <!-- Column 2: Damage Rolls (Now a container to distribute segments equally) -->
+        <LinearLayout
+            android:id="@+id/llDamageContainer"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="4.0"
-            android:text="1d8"
-            android:textSize="12sp"
-            android:textStyle="bold"
+            android:orientation="horizontal"
             android:gravity="center"
             android:paddingVertical="4dp"
             android:paddingHorizontal="2dp"

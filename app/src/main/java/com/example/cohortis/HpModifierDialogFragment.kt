@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.text.Spannable
 import android.text.SpannableStringBuilder
 import android.text.style.ClickableSpan
+import android.text.style.ForegroundColorSpan
 import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.View
@@ -19,6 +20,7 @@ class HpModifierDialogFragment : DialogFragment() {
 
     private lateinit var member: Member
     private var isFromEdit: Boolean = false
+    private var stayOpen: Boolean = false
     private var onApplied: ((Member) -> Unit)? = null
     private var onRollRequested: ((Member, String) -> Int)? = null
     private var accumulator: Int = 0
@@ -27,12 +29,14 @@ class HpModifierDialogFragment : DialogFragment() {
         fun newInstance(
             member: Member,
             isFromEdit: Boolean = false,
+            stayOpen: Boolean = false,
             onRollRequested: ((Member, String) -> Int)? = null,
             onApplied: (Member) -> Unit
         ): HpModifierDialogFragment {
             val fragment = HpModifierDialogFragment()
             fragment.member = member
             fragment.isFromEdit = isFromEdit
+            fragment.stayOpen = stayOpen
             fragment.onRollRequested = onRollRequested
             fragment.onApplied = onApplied
             return fragment
@@ -87,21 +91,28 @@ class HpModifierDialogFragment : DialogFragment() {
             applyModifier(-accumulator)
         }
 
-        // Tapping the Result (Box 3) pastes the exact value into Current HP (and Full if in edit mode)
+        // Tapping the Result (Box 3) sets the value
         binding.btnBox3.setOnClickListener {
+            val oldHp = member.hpCurrent
             if (isFromEdit) {
-                member.hpFull = accumulator
-                member.hpCurrent = accumulator
+                member.hpFull = accumulator.coerceIn(0, 999)
+                member.hpCurrent = member.hpFull // Reset current to full when explicitly setting new full
             } else {
-                member.hpCurrent = accumulator
+                member.hpCurrent = accumulator.coerceIn(-9, 999)
             }
-            onApplied?.invoke(member)
-            dismiss()
+            
+            // Stay open if specifically requested (from Edit Member) 
+            // or if it's an "addition" (increase in value)
+            if (stayOpen || member.hpCurrent > oldHp) {
+                updateDisplay()
+            } else {
+                updateDisplayAndDismiss()
+            }
         }
     }
 
     private fun setupBoxes() {
-        if (isFromEdit) {
+        if (isFromEdit || (member.isPC && member.hitDice.isNotBlank())) {
             // Row 1: Action Button (Rolls)
             binding.tvBox1Label.text = "HP ROLLS"
             
@@ -116,7 +127,6 @@ class HpModifierDialogFragment : DialogFragment() {
                 setupDiceSpannable(rawText)
             }
 
-            // Row 2: Display Only
             binding.tvBox2Display.text = "${member.hpFull} : HP FULL"
         } else {
             // Row 1: Action Button (Quick Heal)
@@ -124,17 +134,15 @@ class HpModifierDialogFragment : DialogFragment() {
             binding.btnBox1.text = member.hpFull.toString()
             binding.btnBox1.setOnClickListener {
                 member.hpCurrent = member.hpFull
-                onApplied?.invoke(member)
-                dismiss()
+                // Quick heal is an addition/set to max, so we follow stayOpen logic
+                if (stayOpen) updateDisplay() else updateDisplayAndDismiss()
             }
 
-            // Row 2: Display Only
             binding.tvBox2Display.text = "${member.hpCurrent} : CURRENT"
         }
     }
 
     private fun setupDiceSpannable(rawText: String) {
-        // Robust split handling pipes, commas, and lowercase Ls (often used as pipes)
         val segments = rawText.split(Regex("\\s*[|l,]\\s*")).filter { it.isNotBlank() }
         
         if (segments.size <= 1) {
@@ -150,11 +158,6 @@ class HpModifierDialogFragment : DialogFragment() {
             val segmentText = segments[i].trim()
             val start = builder.length
             builder.append(segmentText)
-            
-            // Add padding/separator and include it in the clickable span to eliminate dead spots
-            if (i < segments.size - 1) {
-                builder.append("   |   ")
-            }
             val end = builder.length
 
             val span = object : ClickableSpan() {
@@ -168,22 +171,24 @@ class HpModifierDialogFragment : DialogFragment() {
                 }
             }
             builder.setSpan(span, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            
+            if (i < segments.size - 1) {
+                val sepStart = builder.length
+                builder.append("   |   ")
+                val sepEnd = builder.length
+                // Make the separator slightly translucent so it's not "highlighted" like the dice
+                builder.setSpan(ForegroundColorSpan(Color.LTGRAY), sepStart, sepEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
         }
         
         binding.btnBox1.text = builder
         binding.btnBox1.movementMethod = android.text.method.LinkMovementMethod.getInstance()
-        // Clear the standard click listener to let spans handle touches
         binding.btnBox1.setOnClickListener(null)
-        // Ensure the button is clickable to allow spans to work
         binding.btnBox1.isClickable = true
     }
 
     private fun rollSegment(segment: String) {
-        // Haptic feedback for rolling
         binding.root.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
-        
-        // This function REPLACES (pastes) the accumulator with the result of the roll.
-        // It ensures that tapping a die combo (like d10) inserts only that result into the accumulator.
         val rollResult = onRollRequested?.invoke(member, segment) 
             ?: DiceRoller.rollSegmentTotal(segment)
         
@@ -197,9 +202,58 @@ class HpModifierDialogFragment : DialogFragment() {
     }
 
     private fun applyModifier(mod: Int) {
-        member.hpCurrent += mod
+        if (isFromEdit) {
+            // Editing HP Full
+            val oldFull = member.hpFull
+            member.hpFull = (member.hpFull + mod).coerceIn(0, 999)
+            
+            // Scaling logic for HP Current
+            if (member.hpCurrent >= oldFull) {
+                member.hpCurrent = member.hpFull
+            } else {
+                member.hpCurrent = (member.hpCurrent + mod).coerceIn(-9, 999)
+            }
+        } else {
+            // Editing HP Current
+            member.hpCurrent = (member.hpCurrent + mod).coerceIn(-9, 999)
+        }
+        
+        // Logic for auto-dismissal:
+        // 1. If stayOpen is true (Edit Member window), never auto-dismiss.
+        // 2. If mod > 0 (Healing/Adding), don't close so more can be added.
+        // 3. Otherwise (Damage), provide visual feedback and close.
+        if (stayOpen || mod > 0) {
+            updateDisplay()
+        } else {
+            updateDisplayAndDismiss()
+        }
+    }
+
+    private fun updateDisplayAndDismiss() {
+        updateDisplay()
+        // Brief delay for visual confirmation
+        binding.btnPlus.isEnabled = false
+        binding.btnMinus.isEnabled = false
+        binding.btnBox3.isEnabled = false
+        binding.btnBox1.isEnabled = false
+        
+        binding.root.postDelayed({
+            if (isAdded) dismiss()
+        }, 250)
+    }
+
+    private fun updateDisplay() {
+        if (isFromEdit || (member.isPC && member.hitDice.isNotBlank())) {
+            binding.tvBox2Display.text = "${member.hpFull} : HP FULL"
+        } else {
+            binding.tvBox2Display.text = "${member.hpCurrent} : CURRENT"
+        }
+        
         onApplied?.invoke(member)
-        dismiss()
+        
+        // Reset accumulator for next modifier
+        accumulator = 0
+        updateAccumulatorDisplay()
     }
 
     override fun onStart() {

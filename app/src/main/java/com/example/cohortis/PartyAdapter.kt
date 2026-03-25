@@ -8,7 +8,7 @@ import com.example.cohortis.databinding.ItemPartyBinding
 
 class PartyAdapter(
     initialParties: MutableList<Party>,
-    private val onHpChanged: (Member) -> Unit,
+    private val onHpChanged: (Member, Int) -> Unit,
     private val onDamageTapped: (Member, String) -> Int,
     private val onMemberLongTapped: (Member, Party) -> Unit,
     private val onOpenPartyLibrary: (Party) -> Unit,
@@ -16,7 +16,7 @@ class PartyAdapter(
     private val onOpenMemberLibrary: (Party) -> Unit
 ) : RecyclerView.Adapter<PartyAdapter.PartyViewHolder>() {
 
-    private var displayedParties: MutableList<Party> = initialParties.filter { it.isVisible }.toMutableList()
+    private var displayedParties: MutableList<Party> = initialParties.toMutableList()
 
     class PartyViewHolder(val binding: ItemPartyBinding) : RecyclerView.ViewHolder(binding.root)
 
@@ -59,7 +59,7 @@ class PartyAdapter(
 
     fun updateList(newList: List<Party>) {
         displayedParties.clear()
-        displayedParties.addAll(newList.filter { it.isVisible })
+        displayedParties.addAll(newList)
         notifyDataSetChanged()
     }
 }

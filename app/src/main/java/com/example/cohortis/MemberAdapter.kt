@@ -4,12 +4,12 @@ import android.app.AlertDialog
 import android.graphics.Color
 import android.os.Handler
 import android.os.Looper
-import android.text.Spannable
-import android.text.SpannableString
-import android.text.style.ClickableSpan
+import android.util.TypedValue
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.RecyclerView
@@ -17,7 +17,7 @@ import com.example.cohortis.databinding.ItemMemberBinding
 
 class MemberAdapter(
     private var members: MutableList<Member>,
-    private val onHpChanged: (Member) -> Unit,
+    private val onHpChanged: (Member, Int) -> Unit,
     private val onDamageTapped: (Member, String) -> Int,
     private val onMemberLongTapped: (Member) -> Unit
 ) : RecyclerView.Adapter<MemberAdapter.MemberViewHolder>() {
@@ -32,17 +32,7 @@ class MemberAdapter(
     override fun onBindViewHolder(holder: MemberViewHolder, position: Int) {
         val member = members[position]
         holder.binding.apply {
-            val isClone = member.cloneTag != 0.toChar()
-            
-            val nameBase = member.name.trim().split(" ").firstOrNull() ?: ""
-            val formattedName = if (nameBase.length > 9) nameBase.take(9) else nameBase
-            
-            val displayName = if (isClone) {
-                "${member.cloneTag})$formattedName"
-            } else {
-                formattedName
-            }
-            
+            val displayName = member.getDisplayName()
             tvName.text = displayName
             
             val defaultNameColor = tvName.textColors.defaultColor
@@ -60,7 +50,7 @@ class MemberAdapter(
             tvAC.text = member.armorClass.toString()
             
             updateHpDisplay(tvHP, member)
-            setupDamageSpannable(tvDamage, member)
+            setupDamageLayout(llDamageContainer, member)
             
             ivSpecial.visibility = if (member.hasSpecial()) View.VISIBLE else View.INVISIBLE
             ivSpecial.setOnClickListener {
@@ -75,14 +65,16 @@ class MemberAdapter(
             // Tapping hpCurrent opens the HpModifierDialogFragment
             tvHP.setOnClickListener {
                 val activity = it.context as? AppCompatActivity
+                val oldHp = member.hpCurrent
                 activity?.let { act ->
                     HpModifierDialogFragment.newInstance(
                         member = member,
-                        onRollRequested = { m, s -> onDamageTapped(m, s) },
+                        // For PCs, allow individual dice roll logging. For others, keep it silent.
+                        onRollRequested = if (member.isPC) ({ m, s -> onDamageTapped(m, s) }) else null,
                         onApplied = { updatedMember ->
                             updateHpDisplay(tvHP, updatedMember)
                             tvName.setTextColor(if (updatedMember.hpCurrent <= 0) Color.GRAY else defaultNameColor)
-                            onHpChanged(updatedMember)
+                            onHpChanged(updatedMember, oldHp)
                         }
                     ).show(act.supportFragmentManager, "hp_modifier")
                 }
@@ -155,38 +147,35 @@ class MemberAdapter(
         }
     }
 
-    private fun setupDamageSpannable(textView: TextView, member: Member) {
+    private fun setupDamageLayout(container: LinearLayout, member: Member) {
+        container.removeAllViews()
         val rawText = member.damageRolls
-        if (rawText.isBlank()) {
-            textView.text = ""
-            return
-        }
+        if (rawText.isBlank()) return
 
         val segments = rawText.split(Regex("\\s*[|l]\\s*")).filter { it.isNotBlank() }
-        val displayedText = segments.joinToString("   |   ")
-        val spannable = SpannableString(displayedText)
         
-        var currentPos = 0
-        for (segment in segments) {
-            val start = displayedText.indexOf(segment, currentPos)
-            if (start == -1) continue
-            val end = start + segment.length
-            
-            val clickableSpan = object : ClickableSpan() {
-                override fun onClick(widget: View) {
-                    onDamageTapped(member, segment.trim())
-                }
-                override fun updateDrawState(ds: android.text.TextPaint) {
-                    super.updateDrawState(ds)
-                    ds.isUnderlineText = false 
-                    ds.color = textView.currentTextColor
-                }
+        segments.forEachIndexed { index, segment ->
+            val trimmed = segment.trim()
+            val tv = TextView(container.context).apply {
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f)
+                text = trimmed
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+                gravity = Gravity.CENTER
+                setOnClickListener { onDamageTapped(member, trimmed) }
             }
-            spannable.setSpan(clickableSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-            currentPos = end
+            container.addView(tv)
+            
+            if (index < segments.size - 1) {
+                val divider = TextView(container.context).apply {
+                    layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                    text = "|"
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
+                    setTextColor(Color.LTGRAY)
+                    alpha = 0.5f
+                }
+                container.addView(divider)
+            }
         }
-        textView.text = spannable
-        textView.movementMethod = android.text.method.LinkMovementMethod.getInstance()
     }
 
     override fun getItemCount(): Int = members.size

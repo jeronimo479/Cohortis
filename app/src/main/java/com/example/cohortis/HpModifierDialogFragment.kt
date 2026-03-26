@@ -13,6 +13,11 @@ import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
 import com.example.cohortis.databinding.FragmentHpModifierBinding
 
+/**
+ * A dialog fragment providing a calculator-like interface for modifying a member's HP.
+ * Supports direct value setting, addition (healing), subtraction (damage), and 
+ * rolling for values based on hit dice.
+ */
 class HpModifierDialogFragment : DialogFragment() {
 
     private var _binding: FragmentHpModifierBinding? = null
@@ -26,6 +31,15 @@ class HpModifierDialogFragment : DialogFragment() {
     private var accumulator: Int = 0
 
     companion object {
+        /**
+         * Creates a new instance of the HP modifier dialog.
+         *
+         * @param member The member whose HP is being modified.
+         * @param isFromEdit If true, modifying HP Full. If false, modifying HP Current.
+         * @param stayOpen If true, the dialog won't auto-dismiss after applying changes.
+         * @param onRollRequested Optional callback for handling dice rolls (e.g., for logging).
+         * @param onApplied Callback invoked after the HP value has been updated.
+         */
         fun newInstance(
             member: Member,
             isFromEdit: Boolean = false,
@@ -61,7 +75,7 @@ class HpModifierDialogFragment : DialogFragment() {
         setupBoxes()
         updateAccumulatorDisplay()
 
-        // Digits
+        // Digits 0-9
         val digitButtons = listOf(
             binding.btn0, binding.btn1, binding.btn2, binding.btn3,
             binding.btn4, binding.btn5, binding.btn6, binding.btn7,
@@ -91,7 +105,7 @@ class HpModifierDialogFragment : DialogFragment() {
             applyModifier(-accumulator)
         }
 
-        // Tapping the Result (Box 3) sets the value
+        // Tapping the Result (Box 3) sets the value directly
         binding.btnBox3.setOnClickListener {
             val oldHp = member.hpCurrent
             if (isFromEdit) {
@@ -101,8 +115,7 @@ class HpModifierDialogFragment : DialogFragment() {
                 member.hpCurrent = accumulator.coerceIn(-9, 999)
             }
             
-            // Stay open if specifically requested (from Edit Member) 
-            // or if it's an "addition" (increase in value)
+            // Stay open if specifically requested or if value increased (healing)
             if (stayOpen || member.hpCurrent > oldHp) {
                 updateDisplay()
             } else {
@@ -111,9 +124,11 @@ class HpModifierDialogFragment : DialogFragment() {
         }
     }
 
+    /**
+     * Configures the context-sensitive buttons based on whether we are editing HP Full or HP Current.
+     */
     private fun setupBoxes() {
         if (isFromEdit) {
-            // Row 1: Action Button (Rolls)
             binding.tvBox1Label.text = "HP ROLLS"
             
             val rawText = member.hitDice
@@ -129,13 +144,10 @@ class HpModifierDialogFragment : DialogFragment() {
 
             binding.tvBox2Display.text = "${member.hpFull} : HP FULL"
         } else {
-            // Row 1: Action Button (Quick Heal)
-            // Even for PCs, if tapped from party list (isFromEdit = false), show HP FULL
             binding.tvBox1Label.text = "HP FULL"
             binding.btnBox1.text = member.hpFull.toString()
             binding.btnBox1.setOnClickListener {
                 member.hpCurrent = member.hpFull
-                // Quick heal is an addition/set to max, so we follow stayOpen logic
                 if (stayOpen) updateDisplay() else updateDisplayAndDismiss()
             }
 
@@ -143,6 +155,9 @@ class HpModifierDialogFragment : DialogFragment() {
         }
     }
 
+    /**
+     * Creates a clickable spannable string for members with multiple hit dice segments.
+     */
     private fun setupDiceSpannable(rawText: String) {
         val segments = rawText.split(Regex("\\s*[|l,]\\s*")).filter { it.isNotBlank() }
         
@@ -177,7 +192,6 @@ class HpModifierDialogFragment : DialogFragment() {
                 val sepStart = builder.length
                 builder.append("   |   ")
                 val sepEnd = builder.length
-                // Make the separator slightly translucent so it's not "highlighted" like the dice
                 builder.setSpan(ForegroundColorSpan(Color.LTGRAY), sepStart, sepEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
         }
@@ -188,6 +202,9 @@ class HpModifierDialogFragment : DialogFragment() {
         binding.btnBox1.isClickable = true
     }
 
+    /**
+     * Executes a dice roll for a specific segment and updates the accumulator.
+     */
     private fun rollSegment(segment: String) {
         binding.root.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
         val rollResult = onRollRequested?.invoke(member, segment) 
@@ -198,31 +215,32 @@ class HpModifierDialogFragment : DialogFragment() {
         updateAccumulatorDisplay()
     }
 
+    /** Updates the text display of the current accumulator value. */
     private fun updateAccumulatorDisplay() {
         binding.btnBox3.text = accumulator.toString()
     }
 
+    /**
+     * Applies a positive or negative modifier to the member's HP.
+     * Includes scaling logic for HP Current when HP Full is modified.
+     *
+     * @param mod The amount to add or subtract.
+     */
     private fun applyModifier(mod: Int) {
         if (isFromEdit) {
-            // Editing HP Full
             val oldFull = member.hpFull
             member.hpFull = (member.hpFull + mod).coerceIn(0, 999)
             
-            // Scaling logic for HP Current
+            // If wounded, keep current relative to full or just add mod
             if (member.hpCurrent >= oldFull) {
                 member.hpCurrent = member.hpFull
             } else {
                 member.hpCurrent = (member.hpCurrent + mod).coerceIn(-9, 999)
             }
         } else {
-            // Editing HP Current
             member.hpCurrent = (member.hpCurrent + mod).coerceIn(-9, 999)
         }
         
-        // Logic for auto-dismissal:
-        // 1. If stayOpen is true (Edit Member window), never auto-dismiss.
-        // 2. If mod > 0 (Healing/Adding), don't close so more can be added.
-        // 3. Otherwise (Damage), provide visual feedback and close.
         if (stayOpen || mod > 0) {
             updateDisplay()
         } else {
@@ -230,9 +248,11 @@ class HpModifierDialogFragment : DialogFragment() {
         }
     }
 
+    /**
+     * Updates UI and dismisses the dialog with a slight delay for visual confirmation.
+     */
     private fun updateDisplayAndDismiss() {
         updateDisplay()
-        // Brief delay for visual confirmation
         binding.btnPlus.isEnabled = false
         binding.btnMinus.isEnabled = false
         binding.btnBox3.isEnabled = false
@@ -243,6 +263,9 @@ class HpModifierDialogFragment : DialogFragment() {
         }, 250)
     }
 
+    /**
+     * Resets local state and updates the main UI display for the member.
+     */
     private fun updateDisplay() {
         if (isFromEdit) {
             binding.tvBox2Display.text = "${member.hpFull} : HP FULL"

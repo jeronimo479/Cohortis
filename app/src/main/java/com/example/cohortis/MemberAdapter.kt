@@ -15,6 +15,15 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.RecyclerView
 import com.example.cohortis.databinding.ItemMemberBinding
 
+/**
+ * Adapter for displaying [Member] items within a party.
+ * Handles display of HP, Armor Class, THAC0, and damage rolls.
+ *
+ * @param members The list of members in the party.
+ * @param onHpChanged Callback when HP is updated (e.g., via HP modifier dialog).
+ * @param onDamageTapped Callback when an attack roll is requested.
+ * @param onMemberLongTapped Callback for editing or deleting a member.
+ */
 class MemberAdapter(
     private var members: MutableList<Member>,
     private val onHpChanged: (Member, Int) -> Unit,
@@ -22,6 +31,9 @@ class MemberAdapter(
     private val onMemberLongTapped: (Member) -> Unit
 ) : RecyclerView.Adapter<MemberAdapter.MemberViewHolder>() {
 
+    /**
+     * ViewHolder for a single Member item.
+     */
     class MemberViewHolder(val binding: ItemMemberBinding) : RecyclerView.ViewHolder(binding.root)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MemberViewHolder {
@@ -35,9 +47,11 @@ class MemberAdapter(
             val displayName = member.getDisplayName()
             tvName.text = displayName
             
+            // Fade name if dead (HP <= 0)
             val defaultNameColor = tvName.textColors.defaultColor
             tvName.setTextColor(if (member.hpCurrent <= 0) Color.GRAY else defaultNameColor)
             
+            // Display Class/Level for PCs, or formatted Hit Dice for NPCs
             if (member.isPC) {
                 val classChar = member.classLevels.trim().firstOrNull { it.isLetter() } ?: ""
                 val levelDigits = member.classLevels.filter { it.isDigit() }
@@ -62,14 +76,13 @@ class MemberAdapter(
                 true
             }
 
-            // Tapping hpCurrent opens the HpModifierDialogFragment
+            // Tapping HP value opens the quick HP modifier tool
             tvHP.setOnClickListener {
                 val activity = it.context as? AppCompatActivity
                 val oldHp = member.hpCurrent
                 activity?.let { act ->
                     HpModifierDialogFragment.newInstance(
                         member = member,
-                        // For PCs, allow individual dice roll logging. For others, keep it silent.
                         onRollRequested = if (member.isPC) ({ m, s -> onDamageTapped(m, s) }) else null,
                         onApplied = { updatedMember ->
                             updateHpDisplay(tvHP, updatedMember)
@@ -87,6 +100,9 @@ class MemberAdapter(
         }
     }
 
+    /**
+     * Formats a hit dice string into a concise display format (e.g., "1d8+2" -> "d8+2").
+     */
     private fun formatHitDice(hd: String): String {
         if (hd.isBlank()) return ""
         val regex = Regex("""^(\d+)?d(\d+)([+-]\d+)?.*$""")
@@ -105,6 +121,10 @@ class MemberAdapter(
         return "${xPart}d$y$zPart"
     }
 
+    /**
+     * Shows a brief dialog displaying special detection/attack notes.
+     * Automatically dismisses after 1.5 seconds.
+     */
     private fun showSpecialSplash(view: View, member: Member) {
         val detections = member.specialDetections ?: ""
         val attacks = member.specialAttacks ?: ""
@@ -112,7 +132,6 @@ class MemberAdapter(
         if (detections.isBlank() && attacks.isBlank()) return
 
         val msg = StringBuilder()
-
         if (detections.isNotBlank()) msg.append("Detects: $detections")
         if (attacks.isNotBlank()) msg.append("\n\nAttacks: $attacks")
 
@@ -130,6 +149,9 @@ class MemberAdapter(
         }, 1500)
     }
 
+    /**
+     * Updates the HP text and color based on current/max HP ratio.
+     */
     private fun updateHpDisplay(textView: TextView, member: Member) {
         textView.text = member.hpCurrent.toString()
         val ratio = if (member.hpFull > 0) member.hpCurrent.toFloat() / member.hpFull else 0f
@@ -147,6 +169,10 @@ class MemberAdapter(
         }
     }
 
+    /**
+     * Dynamically adds clickable [TextView]s for each damage roll segment.
+     * Segments are separated by pipes or 'l' characters in the [Member.damageRolls] string.
+     */
     private fun setupDamageLayout(container: LinearLayout, member: Member) {
         container.removeAllViews()
         val rawText = member.damageRolls
@@ -180,6 +206,9 @@ class MemberAdapter(
 
     override fun getItemCount(): Int = members.size
 
+    /**
+     * Updates the list of members and refreshes the RecyclerView.
+     */
     fun updateList(newList: List<Member>) {
         members.clear()
         members.addAll(newList)

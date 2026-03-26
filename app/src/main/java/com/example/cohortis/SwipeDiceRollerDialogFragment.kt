@@ -12,6 +12,11 @@ import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
 import com.example.cohortis.databinding.DialogSwipeDiceRollerBinding
 
+/**
+ * A dialog fragment providing a specialized UI for entering and editing complex dice expressions.
+ * It allows users to cycle through different segments of a dice roll (e.g., "1d8 | 2d6")
+ * and modify individual components (repeat count, dice count, sides, modifier).
+ */
 class SwipeDiceRollerDialogFragment : DialogFragment() {
 
     private var _binding: DialogSwipeDiceRollerBinding? = null
@@ -27,8 +32,23 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
     private var selectedField = Field.X
     private var isFirstDigitAfterSelection = true
 
-    enum class Field { N, X, Y, Z }
+    /**
+     * Represents the specific part of a dice expression currently being edited.
+     */
+    enum class Field { 
+        /** Repeat count (N) in "Nx XdY+Z". */
+        N, 
+        /** Number of dice (X) in "Nx XdY+Z". */
+        X, 
+        /** Number of sides (Y) in "Nx XdY+Z". */
+        Y, 
+        /** Modifier (Z) in "Nx XdY+Z". */
+        Z 
+    }
 
+    /**
+     * Internal data structure representing a single segment of a complex dice roll.
+     */
     data class DiceSegment(
         var n: Int = 1,
         var x: Int = 1,
@@ -39,6 +59,14 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
     )
 
     companion object {
+        /**
+         * Creates a new instance of the swipe dice roller.
+         *
+         * @param title The title displayed at the top of the dialog.
+         * @param initialValue The starting dice string to edit.
+         * @param isPC If true, defaults selection to sides (Y) instead of count (X).
+         * @param onDiceEntered Callback invoked whenever the dice string changes.
+         */
         fun newInstance(title: String, initialValue: String, isPC: Boolean = false, onDiceEntered: (String) -> Unit): SwipeDiceRollerDialogFragment {
             val fragment = SwipeDiceRollerDialogFragment()
             fragment.title = title
@@ -63,7 +91,7 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
             diceSegments.add(DiceSegment())
         }
         
-        // Defaults: X is active for non-PCs, Y is active for PCs.
+        // PCs often just change die type (d8 vs d10), NPCs often change count (2d8 vs 3d8)
         selectedField = if (isPC) Field.Y else Field.X
         isFirstDigitAfterSelection = true
 
@@ -73,6 +101,9 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
         updateUI()
     }
 
+    /**
+     * Configures click listeners for the individual fields (N, X, Y, Z) and special buttons.
+     */
     private fun setupSelectionListeners() {
         binding.pickerLayout.apply {
             tvN.setOnClickListener { selectField(Field.N) }
@@ -86,13 +117,12 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
             }
         }
         
-        // hpDice rolls can't have a comma.
+        // Hide comma for Hit Dice as they use pipes for segments
         if (title.contains("Hit Dice", ignoreCase = true)) {
             binding.btnComma.visibility = View.GONE
         }
 
         binding.btnComma.setOnClickListener {
-            // The comma button should add a new field to the series, just after the current one.
             diceSegments[currentIndex].isFollowedByComma = true
             diceSegments.add(currentIndex + 1, DiceSegment())
             currentIndex++
@@ -100,7 +130,6 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
         }
 
         binding.tvPageIndicator.setOnLongClickListener {
-            // A long tap on page 1/n should insert a new diceRoll segment in front of the previous first.
             it.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
             diceSegments.add(0, DiceSegment())
             currentIndex = 0
@@ -109,12 +138,18 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
         }
     }
 
+    /**
+     * Sets the currently active field for editing.
+     */
     private fun selectField(field: Field) {
         selectedField = field
         isFirstDigitAfterSelection = true
         updateUI()
     }
 
+    /**
+     * Sets up the numeric keypad and deletion buttons.
+     */
     private fun setupKeypad() {
         val digitButtons = listOf(
             binding.btn0 to 0, binding.btn1 to 1, binding.btn2 to 2,
@@ -142,6 +177,9 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
         }
     }
 
+    /**
+     * Configures the next/previous navigation buttons for cycling through segments.
+     */
     private fun setupNavigation() {
         binding.btnPrev.setOnClickListener {
             if (currentIndex > 0) {
@@ -178,6 +216,9 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
         }
     }
 
+    /**
+     * Appends a digit to the currently selected field.
+     */
     private fun appendDigit(digit: Int) {
         val seg = diceSegments[currentIndex]
         
@@ -206,6 +247,9 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
         }
     }
 
+    /**
+     * Removes the last digit from the currently selected field.
+     */
     private fun backspace() {
         val seg = diceSegments[currentIndex]
         val currentStr = when (selectedField) {
@@ -228,6 +272,9 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
         updateUI()
     }
 
+    /**
+     * Deletes the currently displayed dice segment.
+     */
     private fun deleteCurrentSegment() {
         if (diceSegments.size > 1) {
             diceSegments.removeAt(currentIndex)
@@ -240,6 +287,9 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
         selectField(if (isPC) Field.Y else Field.X)
     }
 
+    /**
+     * Updates all UI elements to reflect the current state of the active segment.
+     */
     private fun updateUI() {
         if (diceSegments.isEmpty()) diceSegments.add(DiceSegment())
         val seg = diceSegments[currentIndex]
@@ -269,6 +319,10 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
         updateFullStringPreview()
     }
 
+    /**
+     * Updates the preview text display of the entire multi-segment dice expression.
+     * Highlights the segment currently being edited.
+     */
     private fun updateFullStringPreview() {
         val builder = StringBuilder()
         var highlightStart = -1
@@ -302,6 +356,9 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
         binding.tvFullString.text = spannable
     }
 
+    /**
+     * Parses the initial input string into a list of [DiceSegment] objects.
+     */
     private fun parseInitialValue() {
         if (initialValue.isBlank()) return
         diceSegments.clear()
@@ -334,6 +391,11 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
         }
     }
 
+    /**
+     * Serializes the current state back into a dice string and invokes the callback.
+     *
+     * @param shouldDismiss If true, dismisses the dialog after saving.
+     */
     private fun saveChangesAndDismiss(shouldDismiss: Boolean = false) {
         val result = StringBuilder()
         diceSegments.forEachIndexed { index, seg ->

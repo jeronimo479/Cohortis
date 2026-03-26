@@ -2,20 +2,14 @@ package com.example.cohortis
 
 import android.app.AlertDialog
 import android.app.Dialog
-import android.content.res.ColorStateList
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
-import android.text.Editable
 import android.text.Spannable
 import android.text.SpannableStringBuilder
-import android.text.TextWatcher
-import android.util.TypedValue
 import android.view.GestureDetector
 import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
@@ -40,6 +34,10 @@ import com.google.gson.reflect.TypeToken
 import java.text.SimpleDateFormat
 import java.util.*
 
+/**
+ * The main entry point of the application. Manages the overall UI, fragments, 
+ * data persistence, and high-level workflows like importing/exporting data.
+ */
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
@@ -52,10 +50,12 @@ class MainActivity : AppCompatActivity() {
     private var partyLibrary = mutableListOf<Party>()
     private var activeParties = mutableListOf<Party>()
 
+    /** Launcher for the system file picker to import JSON data. */
     private val importLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let { importFromJson(it) }
     }
 
+    /** Launcher for the system file picker to export data as a JSON file. */
     private val exportLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri: Uri? ->
         uri?.let { exportToJson(it) }
     }
@@ -86,6 +86,9 @@ class MainActivity : AppCompatActivity() {
         setupRoundCounter()
     }
 
+    /**
+     * Loads application data from persistent storage and initializes local state.
+     */
     private fun loadData() {
         memberLibrary = dataManager.memberLibrary.apply { sortBy { it.name.lowercase() } }
         
@@ -104,6 +107,11 @@ class MainActivity : AppCompatActivity() {
         currentRound = dataManager.currentRound
     }
 
+    /**
+     * Sorts the party library alphabetically, placing the priority party at the top.
+     *
+     * @param list The mutable list of parties to sort.
+     */
     private fun sortPartyLibrary(list: MutableList<Party>) {
         val priority = list.find { it.isPriority }
         if (priority != null) {
@@ -115,6 +123,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Updates the list of currently active parties, filtered and sorted by priority.
+     */
     private fun updateActivePartiesList() {
         activeParties = partyLibrary.asSequence()
             .filter { it.isActive }
@@ -123,10 +134,16 @@ class MainActivity : AppCompatActivity() {
             .toMutableList()
     }
 
+    /**
+     * Persists all current data using the [DataManager].
+     */
     private fun saveData() {
         dataManager.saveAll(memberLibrary, partyLibrary, activeParties, currentRound)
     }
 
+    /**
+     * Initializes and attaches the UI fragments for party display and event logging.
+     */
     private fun setupFragments() {
         partyFragment = PartyFragment()
         eventFragment = EventFragment()
@@ -166,12 +183,21 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Refreshes the active party list UI and saves the current state.
+     */
     private fun refreshActiveParties() {
         updateActivePartiesList()
         partyFragment?.updateParties(activeParties)
         saveData()
     }
 
+    /**
+     * Synchronizes changes to a member object across all libraries and active lists.
+     * Skips for clones (identified by [Member.cloneTag]) as they are unique instances.
+     *
+     * @param member The updated member object.
+     */
     private fun updateAllReferences(member: Member) {
         if (member.cloneTag != 0.toChar()) {
             return
@@ -190,6 +216,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Configures the gesture detectors for the round counter UI.
+     * Supports single tap (next), double tap (prev), long press + swipe (reset).
+     */
     private fun setupRoundCounter() {
         binding.content.tvRoundNumber.text = currentRound.toString()
         
@@ -253,16 +283,32 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Updates the UI text and persistent storage for the current round number.
+     */
     private fun updateRoundDisplay() {
         binding.content.tvRoundNumber.text = currentRound.toString()
         dataManager.currentRound = currentRound
     }
 
+    /**
+     * Logs a message related to round changes to the event log.
+     *
+     * @param message The message to log.
+     */
     private fun logRoundChange(message: String) {
         val time = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
         eventFragment?.addLog("[$time] $message")
     }
 
+    /**
+     * Performs a detailed damage roll for a member and logs the results.
+     * Includes d20 to-hit rolls and individual damage dice results.
+     *
+     * @param member The member performing the roll.
+     * @param segment The dice expression segment to roll (e.g., "1d8+2").
+     * @return The total damage sum of the rolls.
+     */
     private fun rollDamage(member: Member, segment: String): Int {
         val attackResults = DiceRoller.rollDamageSegmentDetailed(segment)
         if (attackResults.isEmpty()) return 0
@@ -298,6 +344,9 @@ class MainActivity : AppCompatActivity() {
         return attackResults.sumOf { it.damageTotal }
     }
 
+    /**
+     * Helper to setup a simple +/- stepper for an [EditText].
+     */
     private fun setupStepper(valueView: EditText, minusBtn: View, plusBtn: View, min: Int, max: Int, onChanged: ((Int) -> Unit)? = null) {
         minusBtn.setOnClickListener {
             val current = valueView.text.toString().toIntOrNull() ?: 0
@@ -317,6 +366,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Shows a dialog to edit the details of a [Member].
+     *
+     * @param member The member to edit.
+     * @param fromParty Optional party context if editing a member within a party.
+     * @param fromLibrary Boolean indicating if the edit is triggered from the global library.
+     * @param onChanged Callback invoked after changes are saved.
+     */
     private fun showEditMemberDialog(
         member: Member, 
         fromParty: Party? = null,
@@ -475,6 +532,12 @@ class MainActivity : AppCompatActivity() {
         builder.show()
     }
 
+    /**
+     * Shows a dialog to edit party settings like name, active status, and priority.
+     *
+     * @param party The party to edit.
+     * @param onComplete Callback invoked when editing is finished.
+     */
     private fun showPartyEditDialog(party: Party, onComplete: () -> Unit = {}) {
         val dialogView = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -556,6 +619,9 @@ class MainActivity : AppCompatActivity() {
         dialogView.addView(btnDelete)
     }
 
+    /**
+     * Shows a dialog to create a copy of an existing party.
+     */
     private fun showCopyPartyDialog(party: Party, onComplete: () -> Unit = {}) {
         val input = EditText(this)
         input.setText("${party.name} (Copy)")
@@ -584,6 +650,9 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
+    /**
+     * Shows the app settings dialog, allowing import/export and master reset.
+     */
     private fun showSettingsDialog() {
         val titleView = TextView(this).apply {
             text = "Cohortis\nversion ${BuildConfig.VERSION_NAME}\nbuild ${BuildConfig.BUILD_TIME}"
@@ -609,6 +678,9 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
+    /**
+     * Shows a confirmation dialog for a "Master Reset" which wipes all data.
+     */
     private fun showMasterResetConfirm() {
         AlertDialog.Builder(this)
             .setTitle("MASTER RESET")
@@ -626,6 +698,9 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
+    /**
+     * Handles the logic for importing data from a selected JSON file URI.
+     */
     private fun importFromJson(uri: Uri) {
         try {
             contentResolver.openInputStream(uri)?.use { inputStream ->
@@ -645,6 +720,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Recursively processes the queue of members to be imported, handling conflicts.
+     */
     private fun processImportQueue(
         membersQueue: MutableList<Member>,
         partiesToImport: List<Party>,
@@ -708,6 +786,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Exports the current library and parties to a JSON file at the given URI.
+     */
     private fun exportToJson(uri: Uri) {
         try {
             contentResolver.openOutputStream(uri)?.use { outputStream ->
@@ -726,6 +807,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Shows a full-screen dialog to manage the global member library.
+     * Allows creating members or adding them to a target party.
+     *
+     * @param targetParty If provided, selecting a member adds it to this party.
+     * @param onDismiss Callback invoked when the library dialog is closed.
+     */
     private fun showMemberLibraryManager(targetParty: Party? = null, onDismiss: (() -> Unit)? = null) {
         val dialog = Dialog(this, android.R.style.Theme_Material_Light_NoActionBar_Fullscreen)
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -790,6 +878,10 @@ class MainActivity : AppCompatActivity() {
         dialog.show()
     }
 
+    /**
+     * Adds multiple unique clones of a member template to a party.
+     * Clones are tagged with a unique character (a-z, 0-9).
+     */
     private fun addClonesToParty(template: Member, targetParty: Party, count: Int) {
         val tags = ('a'..'z').toList() + ('0'..'9').toList()
         var addedCount = 0
@@ -813,6 +905,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Adds a reference to an existing library member to a target party.
+     */
     private fun addMemberByReference(member: Member, targetParty: Party) {
         if (targetParty.members.any { it.id == member.id }) {
             Toast.makeText(this, "${member.name} is already in this party", Toast.LENGTH_SHORT).show()
@@ -824,6 +919,9 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, "Added ${member.name}", Toast.LENGTH_SHORT).show()
     }
 
+    /**
+     * Creates a new blank member in the global library and opens the edit dialog.
+     */
     private fun createNewMember(onChanged: (() -> Unit)? = null) {
         val newMember = Member(name = "", classLevels = "")
         memberLibrary.add(newMember)
@@ -832,6 +930,9 @@ class MainActivity : AppCompatActivity() {
         showEditMemberDialog(newMember, fromLibrary = true, onChanged = onChanged)
     }
 
+    /**
+     * Shows a full-screen dialog to manage the global party library.
+     */
     private fun showPartyLibraryManager() {
         val dialog = Dialog(this, android.R.style.Theme_Material_Light_NoActionBar_Fullscreen)
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -874,6 +975,9 @@ class MainActivity : AppCompatActivity() {
         dialog.show()
     }
 
+    /**
+     * Shows a dialog to create a new party from scratch.
+     */
     private fun createNewParty(onAdded: (() -> Unit)? = null) {
         val tempParty = Party(id = UUID.randomUUID(), name = "", isActive = true, isPriority = false)
         val dialogView = LinearLayout(this).apply {

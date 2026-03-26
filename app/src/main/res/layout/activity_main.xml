@@ -7,6 +7,19 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+    <ImageButton
+        android:id="@+id/btnAddParty"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@android:drawable/ic_input_add"
+        app:layout_constraintTop_toTopOf="@id/tvAppTitle"
+        app:layout_constraintBottom_toBottomOf="@id/tvAppTitle"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginStart="8dp"
+        android:contentDescription="Add Party"
+        app:tint="?android:attr/textColorPrimary" />
+
     <!-- Custom Header for Title -->
     <TextView
         android:id="@+id/tvAppTitle"

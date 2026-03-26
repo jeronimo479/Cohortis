@@ -112,7 +112,7 @@ class HpModifierDialogFragment : DialogFragment() {
     }
 
     private fun setupBoxes() {
-        if (isFromEdit || (member.isPC && member.hitDice.isNotBlank())) {
+        if (isFromEdit) {
             // Row 1: Action Button (Rolls)
             binding.tvBox1Label.text = "HP ROLLS"
             
@@ -130,6 +130,7 @@ class HpModifierDialogFragment : DialogFragment() {
             binding.tvBox2Display.text = "${member.hpFull} : HP FULL"
         } else {
             // Row 1: Action Button (Quick Heal)
+            // Even for PCs, if tapped from party list (isFromEdit = false), show HP FULL
             binding.tvBox1Label.text = "HP FULL"
             binding.btnBox1.text = member.hpFull.toString()
             binding.btnBox1.setOnClickListener {
@@ -243,7 +244,7 @@ class HpModifierDialogFragment : DialogFragment() {
     }
 
     private fun updateDisplay() {
-        if (isFromEdit || (member.isPC && member.hitDice.isNotBlank())) {
+        if (isFromEdit) {
             binding.tvBox2Display.text = "${member.hpFull} : HP FULL"
         } else {
             binding.tvBox2Display.text = "${member.hpCurrent} : CURRENT"

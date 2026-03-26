@@ -1,5 +1,6 @@
 package com.example.cohortis
 
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -29,6 +30,7 @@ class PartyAdapter(
         val party = displayedParties[position]
         holder.binding.apply {
             tvPartyName.text = party.name
+            tvPartyName.setTextColor(Color.BLACK)
             
             val memberAdapter = MemberAdapter(
                 party.members,
@@ -39,16 +41,13 @@ class PartyAdapter(
             rvMembers.layoutManager = LinearLayoutManager(root.context)
             rvMembers.adapter = memberAdapter
 
-            // Tapping party name opens the Party Manager dialog
             tvPartyName.setOnClickListener {
                 onOpenPartyLibrary(party)
             }
 
-            // Long tapping does nothing
             tvPartyName.setOnLongClickListener(null)
             partyHeader.setOnLongClickListener(null)
 
-            // (+) button opens Member Library
             btnAddMember.setOnClickListener {
                 onOpenMemberLibrary(party)
             }

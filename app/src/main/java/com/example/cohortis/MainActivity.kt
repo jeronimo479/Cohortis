@@ -5,8 +5,10 @@ import android.app.Dialog
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
+import android.text.Editable
 import android.text.Spannable
 import android.text.SpannableStringBuilder
+import android.text.TextWatcher
 import android.view.GestureDetector
 import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
@@ -15,6 +17,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.widget.ArrayAdapter
+import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.ImageButton
@@ -71,6 +74,11 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnAddParty.setOnClickListener {
             createNewParty()
+        }
+
+        binding.btnAddParty.setOnLongClickListener {
+            showPartyLibraryManager()
+            true
         }
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.mainRoot) { v, insets ->
@@ -367,6 +375,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
+     * Helper to open the dice roller dialog.
+     */
+    private fun editHpDiceRolls(title: String, initialValue: String, isPC: Boolean, isHpOrHd: Boolean, onComplete: (String) -> Unit) {
+        SwipeDiceRollerDialogFragment.newInstance(
+            title = title,
+            initialValue = initialValue,
+            isPC = isPC,
+            isHpOrHd = isHpOrHd,
+            onDiceEntered = onComplete
+        ).show(supportFragmentManager, "swipe_dice_${title.lowercase().replace(" ", "_")}")
+    }
+
+    /**
      * Shows a dialog to edit the details of a [Member].
      *
      * @param member The member to edit.
@@ -392,7 +413,12 @@ class MainActivity : AppCompatActivity() {
             etHitDice.setOnClickListener {
                 val wasEmpty = member.hitDice.isBlank()
                 val oldHpCurrent = member.hpCurrent
-                SwipeDiceRollerDialogFragment.newInstance("Hit Dice", etHitDice.text.toString(), member.isPC) { diceStr ->
+                editHpDiceRolls(
+                    title = "Hit Dice", 
+                    initialValue = etHitDice.text.toString(), 
+                    isPC = cbIsPC.isChecked, 
+                    isHpOrHd = true
+                ) { diceStr ->
                     etHitDice.setText(diceStr)
                     member.hitDice = diceStr
                     if (wasEmpty && diceStr.isNotBlank()) {
@@ -407,7 +433,7 @@ class MainActivity : AppCompatActivity() {
                             eventFragment?.addLog("${member.getDisplayName()} hpCurrent $oldHpCurrent -> $rolledHp")
                         }
                     }
-                }.show(supportFragmentManager, "swipe_dice_hitdice")
+                }
             }
             
             btnEditHpFull.text = member.hpFull.toString()
@@ -461,7 +487,12 @@ class MainActivity : AppCompatActivity() {
             etDamageRolls.isFocusable = false
             etDamageRolls.setOnClickListener {
                 val wasEmpty = member.damageRolls.isBlank()
-                SwipeDiceRollerDialogFragment.newInstance("Damage Rolls", etDamageRolls.text.toString(), member.isPC) { diceStr ->
+                editHpDiceRolls(
+                    title = "Damage Rolls", 
+                    initialValue = etDamageRolls.text.toString(), 
+                    isPC = cbIsPC.isChecked, 
+                    isHpOrHd = false
+                ) { diceStr ->
                     etDamageRolls.setText(diceStr)
                     member.damageRolls = diceStr
                     if (wasEmpty && member.hitDice.isNotBlank() && member.hpFull == 1 && member.hpCurrent == 1) {
@@ -473,7 +504,7 @@ class MainActivity : AppCompatActivity() {
                         refreshActiveParties()
                         eventFragment?.addLog("${member.getDisplayName()} hpCurrent 1 -> $rolledHp")
                     }
-                }.show(supportFragmentManager, "swipe_dice_damage")
+                }
             }
 
             etSpecialDetections.setText(member.specialDetections ?: "")
@@ -922,12 +953,15 @@ class MainActivity : AppCompatActivity() {
     /**
      * Creates a new blank member in the global library and opens the edit dialog.
      */
-    private fun createNewMember(onChanged: (() -> Unit)? = null) {
+    private fun createNewMember(targetParty: Party? = null, onChanged: (() -> Unit)? = null) {
         val newMember = Member(name = "", classLevels = "")
         memberLibrary.add(newMember)
+        if (targetParty != null) {
+            targetParty.members.add(newMember)
+        }
         saveData()
         refreshActiveParties()
-        showEditMemberDialog(newMember, fromLibrary = true, onChanged = onChanged)
+        showEditMemberDialog(newMember, fromParty = targetParty, fromLibrary = targetParty == null, onChanged = onChanged)
     }
 
     /**
@@ -994,6 +1028,7 @@ class MainActivity : AppCompatActivity() {
             text = "Active"
             isChecked = true
             setTextColor(Color.BLACK)
+            isEnabled = false
         }
 
         val cbPriority = CheckBox(this).apply {
@@ -1007,26 +1042,45 @@ class MainActivity : AppCompatActivity() {
             setPadding(16, 0, 0, 0)
             setTextColor(Color.BLACK)
         }
-        val btnAddMembers = ImageButton(this).apply {
-            setImageResource(android.R.drawable.ic_input_add)
-            background = ContextCompat.getDrawable(context, android.R.drawable.btn_default)
-            layoutParams = LinearLayout.LayoutParams((48 * resources.displayMetrics.density).toInt(), (48 * resources.displayMetrics.density).toInt())
+        
+        val btnAddFromLibrary = Button(this).apply {
+            text = "Add from Library"
+            isEnabled = false
             setOnClickListener {
                 showMemberLibraryManager(tempParty) {
                     tvMemberCount.text = "Members: ${tempParty.members.size}"
                 }
             }
         }
-        val memberRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = android.view.Gravity.CENTER_VERTICAL
-            addView(btnAddMembers)
-            addView(tvMemberCount)
+        
+        val btnCreateNewMember = Button(this).apply {
+            text = "Create New Member"
+            isEnabled = false
+            setOnClickListener {
+                createNewMember(tempParty) {
+                    tvMemberCount.text = "Members: ${tempParty.members.size}"
+                }
+            }
         }
+        
+        etName.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                val hasName = s?.toString()?.trim()?.isNotEmpty() == true
+                cbActive.isEnabled = hasName
+                if (hasName) cbActive.isChecked = true
+                btnAddFromLibrary.isEnabled = hasName
+                btnCreateNewMember.isEnabled = hasName
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
+
         dialogView.addView(etName)
         dialogView.addView(cbActive)
         dialogView.addView(cbPriority)
-        dialogView.addView(memberRow)
+        dialogView.addView(btnAddFromLibrary)
+        dialogView.addView(btnCreateNewMember)
+        dialogView.addView(tvMemberCount)
 
         AlertDialog.Builder(this)
             .setTitle("Create New Party")

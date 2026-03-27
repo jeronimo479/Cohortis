@@ -26,6 +26,7 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
     private var initialValue: String = ""
     private var title: String = "Dice Roller"
     private var isPC: Boolean = false
+    private var isHpOrHd: Boolean = false
 
     private val diceSegments = mutableListOf<DiceSegment>()
     private var currentIndex = 0
@@ -65,13 +66,21 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
          * @param title The title displayed at the top of the dialog.
          * @param initialValue The starting dice string to edit.
          * @param isPC If true, defaults selection to sides (Y) instead of count (X).
+         * @param isHpOrHd If true, enables the PC/NPC specific field selection logic.
          * @param onDiceEntered Callback invoked whenever the dice string changes.
          */
-        fun newInstance(title: String, initialValue: String, isPC: Boolean = false, onDiceEntered: (String) -> Unit): SwipeDiceRollerDialogFragment {
+        fun newInstance(
+            title: String, 
+            initialValue: String, 
+            isPC: Boolean = false, 
+            isHpOrHd: Boolean = false,
+            onDiceEntered: (String) -> Unit
+        ): SwipeDiceRollerDialogFragment {
             val fragment = SwipeDiceRollerDialogFragment()
             fragment.title = title
             fragment.initialValue = initialValue
             fragment.isPC = isPC
+            fragment.isHpOrHd = isHpOrHd
             fragment.onDiceEntered = onDiceEntered
             return fragment
         }
@@ -91,8 +100,12 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
             diceSegments.add(DiceSegment())
         }
         
-        // PCs often just change die type (d8 vs d10), NPCs often change count (2d8 vs 3d8)
-        selectedField = if (isPC) Field.Y else Field.X
+        // PCs often just change die type (d8 vs d10) for HP/HD, NPCs often change count (2d8 vs 3d8)
+        selectedField = if (isHpOrHd) {
+            if (isPC) Field.Y else Field.X
+        } else {
+            Field.X
+        }
         isFirstDigitAfterSelection = true
 
         setupSelectionListeners()
@@ -126,14 +139,14 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
             diceSegments[currentIndex].isFollowedByComma = true
             diceSegments.add(currentIndex + 1, DiceSegment())
             currentIndex++
-            selectField(if (isPC) Field.Y else Field.X)
+            selectField(if (isHpOrHd && isPC) Field.Y else Field.X)
         }
 
         binding.tvPageIndicator.setOnLongClickListener {
             it.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
             diceSegments.add(0, DiceSegment())
             currentIndex = 0
-            selectField(if (isPC) Field.Y else Field.X)
+            selectField(if (isHpOrHd && isPC) Field.Y else Field.X)
             true
         }
     }
@@ -164,7 +177,7 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
         binding.btn0.setOnLongClickListener {
             it.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
             diceSegments[currentIndex] = DiceSegment()
-            selectField(if (isPC) Field.Y else Field.X)
+            selectField(if (isHpOrHd && isPC) Field.Y else Field.X)
             true
         }
 
@@ -185,7 +198,7 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
             if (currentIndex > 0) {
                 saveChangesAndDismiss(false)
                 currentIndex--
-                selectField(if (isPC) Field.Y else Field.X)
+                selectField(if (isHpOrHd && isPC) Field.Y else Field.X)
             }
         }
         
@@ -193,7 +206,7 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
             it.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
             saveChangesAndDismiss(false)
             diceSegments.add(currentIndex, DiceSegment())
-            selectField(if (isPC) Field.Y else Field.X)
+            selectField(if (isHpOrHd && isPC) Field.Y else Field.X)
             true
         }
 
@@ -203,7 +216,7 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
                 diceSegments.add(DiceSegment())
             }
             currentIndex++
-            selectField(if (isPC) Field.Y else Field.X)
+            selectField(if (isHpOrHd && isPC) Field.Y else Field.X)
         }
         
         binding.btnNext.setOnLongClickListener {
@@ -211,7 +224,7 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
             saveChangesAndDismiss(false)
             diceSegments.add(currentIndex + 1, DiceSegment())
             currentIndex++
-            selectField(if (isPC) Field.Y else Field.X)
+            selectField(if (isHpOrHd && isPC) Field.Y else Field.X)
             true
         }
     }
@@ -284,7 +297,7 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
         } else {
             diceSegments[0] = DiceSegment()
         }
-        selectField(if (isPC) Field.Y else Field.X)
+        selectField(if (isHpOrHd && isPC) Field.Y else Field.X)
     }
 
     /**

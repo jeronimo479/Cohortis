@@ -22,9 +22,9 @@ data class Member(
     /** Hit dice string used for HP calculation, e.g., "1d8+2 | 1d4". */
     var hitDice: String = "",
     /** The maximum hit points the member can have. */
-    var hpFull: Int = 1,
+    var hpFull: Int = 0,
     /** The current hit points of the member. */
-    var hpCurrent: Int = 1,
+    var hpCurrent: Int = 0,
     /** String representing damage rolls, e.g., "1d6 | 1d4". */
     var damageRolls: String = "",
     /** Special detection abilities (e.g., "Detect Traps 30%"). */

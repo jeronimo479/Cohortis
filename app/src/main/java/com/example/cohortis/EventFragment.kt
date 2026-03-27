@@ -14,101 +14,135 @@ import androidx.fragment.app.Fragment
 import com.example.cohortis.databinding.FragmentEventBinding
 
 /**
- * A fragment that displays a rolling log of events (e.g., dice rolls, HP changes).
- * Maintains a history and allows viewing it in a full-screen dialog.
+ * Displays a rolling log of events (dice rolls, HP changes, etc.).
+ * Long-press opens a fullscreen history viewer.
  */
 class EventFragment : Fragment() {
+
     private var _binding: FragmentEventBinding? = null
     private val binding get() = _binding!!
-    
-    /** Internal storage for event history. */
-    private val eventHistory = mutableListOf<CharSequence>()
-    /** Maximum number of entries to keep in history. */
-    private val MAX_HISTORY = 500
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+    // Ring-buffer-ish storage: removeFirst() is O(1)
+    private val eventHistory: ArrayDeque<CharSequence> = ArrayDeque(MAX_HISTORY)
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
         _binding = FragmentEventBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
-        // Long click on the event bar opens the history viewer
+
+        // Long-press opens history viewer
         binding.root.setOnLongClickListener {
-            showHistoryDialog()
+            if (isAdded) showHistoryDialog()
             true
         }
+
+        // Restore the two-line preview from stored history
+        updatePreviewFromHistory()
     }
 
     /**
-     * Adds a new message to the event log and updates the UI preview.
-     * Automatically prunes history if [MAX_HISTORY] is exceeded.
+     * Adds a new message to the event log.
+     * Safe to call even when the view is not created; it will store history only.
      *
-     * @param message The text or spannable string to add.
+     * NOTE: If addLog might be called from a background thread, keep the post{} below.
      */
     fun addLog(message: CharSequence) {
-        eventHistory.add(message)
-        if (eventHistory.size > MAX_HISTORY) {
-            eventHistory.removeAt(0)
+        if (eventHistory.size == MAX_HISTORY) {
+            eventHistory.removeFirst()
         }
-        
-        // Simple two-line preview display
-        binding.tvLog1.text = binding.tvLog2.text
-        binding.tvLog2.text = message
+        eventHistory.addLast(message)
+
+        // Update UI only if view exists; schedule on UI thread safely.
+        _binding?.root?.post { updatePreviewFromHistory() }
     }
 
     /**
-     * Displays a full-screen dialog containing the complete event history in a [ListView].
+     * Updates the two-line preview.    
+     */
+    private fun updatePreviewFromHistory() {
+        val size = eventHistory.size
+        val last = if (size >= 1) eventHistory.last() else null
+        val secondLast = if (size >= 2) eventHistory.elementAt(size - 2) else null
+
+        binding.tvLog2.text = last ?: ""
+        binding.tvLog1.text = secondLast ?: ""
+    }
+
+    /**
+     * Fullscreen dialog showing the entire history.
      */
     private fun showHistoryDialog() {
-        val dialog = Dialog(requireContext(), android.R.style.Theme_Black_NoTitleBar_Fullscreen)
-        
-        val container = LinearLayout(requireContext()).apply {
+        val ctx = context ?: return
+
+        val dialog = Dialog(ctx, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+
+        val density = resources.displayMetrics.density
+        fun dp(value: Int) = (value * density).toInt()
+
+        val bgColor = Color.parseColor("#222222") // Very Dark Gray
+        val textColor = Color.parseColor("#00FF00") // Green
+
+        val container = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.parseColor("#222222"))
-            val topPadding = (16 * resources.displayMetrics.density).toInt()
-            val bottomPadding = (32 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, bottomPadding)
+            setBackgroundColor(bgColor)
+            setPadding(0, dp(16), 0, dp(32))
         }
 
-        val listView = ListView(requireContext()).apply {
+        val listView = ListView(ctx).apply {
             divider = null
             dividerHeight = 0
-            setBackgroundColor(Color.parseColor("#222222"))
+            setBackgroundColor(bgColor)
         }
-        
-        val displayList = eventHistory.toList()
-        
-        val adapter = object : ArrayAdapter<CharSequence>(requireContext(), 0, displayList) {
+
+        // Snapshot so the dialog content is stable while open
+        val displayList: List<CharSequence> = eventHistory.toList()
+
+        val adapter = object : ArrayAdapter<CharSequence>(ctx, 0, displayList) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                val textView = (convertView as? TextView) ?: TextView(context).apply {
-                    setTextColor(Color.parseColor("#00FF00")) // Classic green terminal look
-                    textSize = 13f 
-                    val horizontalPadding = (24 * resources.displayMetrics.density).toInt()
-                    val verticalPadding = (4 * resources.displayMetrics.density).toInt()
-                    setPadding(horizontalPadding, verticalPadding, horizontalPadding, verticalPadding)
+                val tv = (convertView as? TextView) ?: TextView(context).apply {
+                    setTextColor(textColor)
+                    textSize = 13f
                     includeFontPadding = false
+                    setPadding(dp(24), dp(4), dp(24), dp(4))
                 }
-                textView.text = getItem(position)
-                return textView
+                tv.text = getItem(position)
+                return tv
             }
         }
-        
+
         listView.adapter = adapter
-        container.addView(listView, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT))
+        container.addView(
+            listView,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT
+            )
+        )
+
         dialog.setContentView(container)
-        
-        // Scroll to the latest entry
+
+        // Scroll to the newest entry
         listView.post {
-            listView.setSelection(adapter.count - 1)
+            val count = adapter.count
+            if (count > 0) listView.setSelection(count - 1)
         }
-        
+
         dialog.show()
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    private companion object {
+        private const val MAX_HISTORY = 500
     }
 }

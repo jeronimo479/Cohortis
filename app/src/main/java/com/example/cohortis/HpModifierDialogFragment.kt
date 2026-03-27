@@ -14,9 +14,10 @@ import androidx.fragment.app.DialogFragment
 import com.example.cohortis.databinding.FragmentHpModifierBinding
 
 /**
- * A dialog fragment providing a calculator-like interface for modifying a member's HP.
+ * A dialog fragment providing a calculator-like interface for modifying a member's
+ * hpCurrent if called from partyFragment, or hpFull if called from editMember.
  * Supports direct value setting, addition (healing), subtraction (damage), and 
- * rolling for values based on hit dice.
+ * rolling for values based on hpDiceRoll string.
  */
 class HpModifierDialogFragment : DialogFragment() {
 
@@ -157,6 +158,11 @@ class HpModifierDialogFragment : DialogFragment() {
 
     /**
      * Creates a clickable spannable string for members with multiple hit dice segments.
+     * Dice roll strings use the following format:
+     * [N*|Nx][X]dY[+Z|-Z][(,l|)[N*|Nx][X]dY[+Z|-Z]]...
+     * For Example:
+     *  "6x8d4+7 , d8"
+     *  "8d6 , d10 | 3x5d6"
      */
     private fun setupDiceSpannable(rawText: String) {
         val segments = rawText.split(Regex("\\s*[|l,]\\s*")).filter { it.isNotBlank() }

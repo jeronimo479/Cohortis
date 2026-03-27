@@ -16,7 +16,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.cohortis.databinding.ItemMemberBinding
 
 /**
- * Adapter for displaying [Member] items within a party.
+ * Recycler Adapter for displaying [Member] items within a party.
  * Handles display of HP, Armor Class, THAC0, and damage rolls.
  *
  * @param members The list of members in the party.
@@ -102,6 +102,11 @@ class MemberAdapter(
 
     /**
      * Formats a hit dice string into a concise display format (e.g., "1d8+2" -> "d8+2").
+     * A roll segment will have the format: "[X] dY [+Z|-Z]". This will show the rolls
+     * using the fewest number of characters possible. 
+     *  If X=1, don't show it.
+     *  If Z=0, don't show it.
+     *  The minimum require is "dY" where Y represents an unsigned int from 1..999.
      */
     private fun formatHitDice(hd: String): String {
         if (hd.isBlank()) return ""
@@ -150,7 +155,8 @@ class MemberAdapter(
     }
 
     /**
-     * Updates the HP text and color based on current/max HP ratio.
+     * Updates the HP text and color based on current/max HP ratio. Green for 
+     * Full health, Yellow for injured, Red for near death (< 10% of Full) 
      */
     private fun updateHpDisplay(textView: TextView, member: Member) {
         textView.text = member.hpCurrent.toString()

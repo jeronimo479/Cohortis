@@ -1,10 +1,13 @@
 package com.example.cohortis
 
+import android.app.AlertDialog
 import android.graphics.Color
 import android.os.Bundle
 import android.text.Spannable
 import android.text.SpannableString
+import android.text.method.LinkMovementMethod
 import android.text.style.BackgroundColorSpan
+import android.text.style.ClickableSpan
 import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.View
@@ -14,8 +17,7 @@ import com.example.cohortis.databinding.DialogSwipeDiceRollerBinding
 
 /**
  * A dialog fragment providing a specialized UI for entering and editing complex dice expressions.
- * It allows users to cycle through different segments of a dice roll (e.g., "1d8 | 2d6")
- * and modify individual components (repeat count, dice count, sides, modifier).
+ * Dice rolls follow the format NxXdY+Z.
  */
 class SwipeDiceRollerDialogFragment : DialogFragment() {
 
@@ -25,63 +27,50 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
     private var onDiceEntered: ((String) -> Unit)? = null
     private var initialValue: String = ""
     private var title: String = "Dice Roller"
-    private var isPC: Boolean = false
-    private var isHpOrHd: Boolean = false
+    private var isCommaAllowed: Boolean = true
+    private var initialField: Field = Field.X
 
-    private val diceSegments = mutableListOf<DiceSegment>()
+    private val diceRolls = mutableListOf<DiceRoll>()
     private var currentIndex = 0
     private var selectedField = Field.X
     private var isFirstDigitAfterSelection = true
 
-    /**
-     * Represents the specific part of a dice expression currently being edited.
-     */
-    enum class Field { 
-        /** Repeat count (N) in "Nx XdY+Z". */
-        N, 
-        /** Number of dice (X) in "Nx XdY+Z". */
-        X, 
-        /** Number of sides (Y) in "Nx XdY+Z". */
-        Y, 
-        /** Modifier (Z) in "Nx XdY+Z". */
-        Z 
-    }
+    enum class Field { N, X, Y, Z }
 
     /**
-     * Internal data structure representing a single segment of a complex dice roll.
+     * Internal data structure representing a single dice roll (NxXdY+Z).
      */
-    data class DiceSegment(
+    data class DiceRoll(
         var n: Int = 1,
         var x: Int = 1,
         var y: Int = 8,
         var z: Int = 0,
         var isPositive: Boolean = true,
-        var isFollowedByComma: Boolean = false
+        var separator: String = "" // "," or "|"
     )
 
     companion object {
-        /**
-         * Creates a new instance of the swipe dice roller.
-         *
-         * @param title The title displayed at the top of the dialog.
-         * @param initialValue The starting dice string to edit.
-         * @param isPC If true, defaults selection to sides (Y) instead of count (X).
-         * @param isHpOrHd If true, enables the PC/NPC specific field selection logic.
-         * @param onDiceEntered Callback invoked whenever the dice string changes.
-         */
         fun newInstance(
-            title: String, 
-            initialValue: String, 
-            isPC: Boolean = false, 
+            title: String,
+            initialValue: String,
+            isPC: Boolean = false,
             isHpOrHd: Boolean = false,
             onDiceEntered: (String) -> Unit
         ): SwipeDiceRollerDialogFragment {
             val fragment = SwipeDiceRollerDialogFragment()
             fragment.title = title
             fragment.initialValue = initialValue
-            fragment.isPC = isPC
-            fragment.isHpOrHd = isHpOrHd
             fragment.onDiceEntered = onDiceEntered
+            
+            // Logic for field defaults
+            fragment.initialField = when {
+                title.contains("Damage", ignoreCase = true) -> Field.Y
+                isHpOrHd && isPC -> Field.Y
+                else -> Field.X
+            }
+            // Comma disallowed for Hit Dice based on previous logic
+            fragment.isCommaAllowed = !title.contains("Hit Dice", ignoreCase = true)
+            
             return fragment
         }
     }
@@ -94,29 +83,25 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.tvTitle.text = title
+        binding.tvFullString.movementMethod = LinkMovementMethod.getInstance()
 
         parseInitialValue()
-        if (diceSegments.isEmpty()) {
-            diceSegments.add(DiceSegment())
+        if (diceRolls.isEmpty()) {
+            diceRolls.add(DiceRoll())
         }
         
-        // PCs often just change die type (d8 vs d10) for HP/HD, NPCs often change count (2d8 vs 3d8)
-        selectedField = if (isHpOrHd) {
-            if (isPC) Field.Y else Field.X
-        } else {
-            Field.X
-        }
+        selectedField = initialField
         isFirstDigitAfterSelection = true
 
         setupSelectionListeners()
         setupKeypad()
-        setupNavigation()
         updateUI()
+
+        binding.btnOk.setOnClickListener {
+            saveChangesAndDismiss(true)
+        }
     }
 
-    /**
-     * Configures click listeners for the individual fields (N, X, Y, Z) and special buttons.
-     */
     private fun setupSelectionListeners() {
         binding.pickerLayout.apply {
             tvN.setOnClickListener { selectField(Field.N) }
@@ -125,44 +110,18 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
             tvZ.setOnClickListener { selectField(Field.Z) }
             
             btnSign.setOnClickListener {
-                diceSegments[currentIndex].isPositive = !diceSegments[currentIndex].isPositive
+                diceRolls[currentIndex].isPositive = !diceRolls[currentIndex].isPositive
                 selectField(Field.Z)
             }
         }
-        
-        // Hide comma for Hit Dice as they use pipes for segments
-        if (title.contains("Hit Dice", ignoreCase = true)) {
-            binding.btnComma.visibility = View.GONE
-        }
-
-        binding.btnComma.setOnClickListener {
-            diceSegments[currentIndex].isFollowedByComma = true
-            diceSegments.add(currentIndex + 1, DiceSegment())
-            currentIndex++
-            selectField(if (isHpOrHd && isPC) Field.Y else Field.X)
-        }
-
-        binding.tvPageIndicator.setOnLongClickListener {
-            it.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-            diceSegments.add(0, DiceSegment())
-            currentIndex = 0
-            selectField(if (isHpOrHd && isPC) Field.Y else Field.X)
-            true
-        }
     }
 
-    /**
-     * Sets the currently active field for editing.
-     */
     private fun selectField(field: Field) {
         selectedField = field
         isFirstDigitAfterSelection = true
         updateUI()
     }
 
-    /**
-     * Sets up the numeric keypad and deletion buttons.
-     */
     private fun setupKeypad() {
         val digitButtons = listOf(
             binding.btn0 to 0, binding.btn1 to 1, binding.btn2 to 2,
@@ -174,263 +133,225 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
             btn.setOnClickListener { appendDigit(digit) }
         }
 
-        binding.btn0.setOnLongClickListener {
-            it.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-            diceSegments[currentIndex] = DiceSegment()
-            selectField(if (isHpOrHd && isPC) Field.Y else Field.X)
-            true
-        }
+        binding.btnComma.visibility = if (isCommaAllowed) View.VISIBLE else View.INVISIBLE
+        binding.btnComma.setOnClickListener { addSeparator(",") }
 
-        binding.btnC.setOnClickListener { backspace() }
+        binding.btnPipe.setOnClickListener { addSeparator("|") }
 
-        binding.btnDel.setOnLongClickListener {
-            it.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-            deleteCurrentSegment()
+        binding.btnDel.setOnClickListener { onDelTapped() }
+        binding.btnDel.setOnLongClickListener { view ->
+            view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+            showDeleteConfirmDialog()
             true
         }
     }
 
-    /**
-     * Configures the next/previous navigation buttons for cycling through segments.
-     */
-    private fun setupNavigation() {
-        binding.btnPrev.setOnClickListener {
-            if (currentIndex > 0) {
-                saveChangesAndDismiss(false)
-                currentIndex--
-                selectField(if (isHpOrHd && isPC) Field.Y else Field.X)
-            }
-        }
-        
-        binding.btnPrev.setOnLongClickListener {
-            it.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-            saveChangesAndDismiss(false)
-            diceSegments.add(currentIndex, DiceSegment())
-            selectField(if (isHpOrHd && isPC) Field.Y else Field.X)
-            true
-        }
-
-        binding.btnNext.setOnClickListener {
-            saveChangesAndDismiss(false)
-            if (currentIndex == diceSegments.size - 1) {
-                diceSegments.add(DiceSegment())
-            }
-            currentIndex++
-            selectField(if (isHpOrHd && isPC) Field.Y else Field.X)
-        }
-        
-        binding.btnNext.setOnLongClickListener {
-            it.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-            saveChangesAndDismiss(false)
-            diceSegments.add(currentIndex + 1, DiceSegment())
-            currentIndex++
-            selectField(if (isHpOrHd && isPC) Field.Y else Field.X)
-            true
-        }
+    private fun addSeparator(sep: String) {
+        diceRolls[currentIndex].separator = sep
+        diceRolls.add(currentIndex + 1, DiceRoll())
+        currentIndex++
+        selectField(initialField)
     }
 
-    /**
-     * Appends a digit to the currently selected field.
-     */
     private fun appendDigit(digit: Int) {
-        val seg = diceSegments[currentIndex]
-        
+        val roll = diceRolls[currentIndex]
+        val currentVal = when (selectedField) {
+            Field.N -> roll.n
+            Field.X -> roll.x
+            Field.Y -> roll.y
+            Field.Z -> roll.z
+        }
+
         val newVal = if (isFirstDigitAfterSelection) {
             digit
         } else {
-            val currentStr = when (selectedField) {
-                Field.N -> seg.n.toString()
-                Field.X -> seg.x.toString()
-                Field.Y -> seg.y.toString()
-                Field.Z -> seg.z.toString()
-            }
+            val currentStr = currentVal.toString()
             val newStr = if (currentStr == "0") digit.toString() else currentStr + digit.toString()
             newStr.toIntOrNull() ?: 0
         }
 
-        if (newVal <= 999) {
+        // Validate Ranges
+        val isValid = when (selectedField) {
+            Field.N -> newVal in 0..99
+            Field.X -> newVal in 0..999
+            Field.Y -> newVal in 0..1000
+            Field.Z -> newVal in 0..999
+        }
+
+        if (isValid) {
             when (selectedField) {
-                Field.N -> seg.n = newVal
-                Field.X -> seg.x = newVal
-                Field.Y -> seg.y = newVal
-                Field.Z -> seg.z = newVal
+                Field.N -> roll.n = newVal
+                Field.X -> roll.x = newVal
+                Field.Y -> roll.y = newVal
+                Field.Z -> roll.z = newVal
             }
             isFirstDigitAfterSelection = false
             updateUI()
         }
     }
 
-    /**
-     * Removes the last digit from the currently selected field.
-     */
-    private fun backspace() {
-        val seg = diceSegments[currentIndex]
+    private fun onDelTapped() {
+        val roll = diceRolls[currentIndex]
         val currentStr = when (selectedField) {
-            Field.N -> seg.n.toString()
-            Field.X -> seg.x.toString()
-            Field.Y -> seg.y.toString()
-            Field.Z -> seg.z.toString()
+            Field.N -> roll.n.toString()
+            Field.X -> roll.x.toString()
+            Field.Y -> roll.y.toString()
+            Field.Z -> roll.z.toString()
         }
 
         val newStr = if (currentStr.length > 1) currentStr.dropLast(1) else "0"
         val newVal = newStr.toIntOrNull() ?: 0
 
         when (selectedField) {
-            Field.N -> seg.n = newVal
-            Field.X -> seg.x = newVal
-            Field.Y -> seg.y = newVal
-            Field.Z -> seg.z = newVal
+            Field.N -> roll.n = newVal
+            Field.X -> roll.x = newVal
+            Field.Y -> roll.y = newVal
+            Field.Z -> roll.z = newVal
         }
         isFirstDigitAfterSelection = false
         updateUI()
     }
 
-    /**
-     * Deletes the currently displayed dice segment.
-     */
-    private fun deleteCurrentSegment() {
-        if (diceSegments.size > 1) {
-            diceSegments.removeAt(currentIndex)
-            if (currentIndex >= diceSegments.size) {
-                currentIndex = diceSegments.size - 1
-            }
-        } else {
-            diceSegments[0] = DiceSegment()
-        }
-        selectField(if (isHpOrHd && isPC) Field.Y else Field.X)
+    private fun showDeleteConfirmDialog() {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Delete Roll")
+            .setMessage("Delete the current dice roll?")
+            .setPositiveButton("Delete") { _, _ -> deleteCurrentRoll() }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
-    /**
-     * Updates all UI elements to reflect the current state of the active segment.
-     */
-    private fun updateUI() {
-        if (diceSegments.isEmpty()) diceSegments.add(DiceSegment())
-        val seg = diceSegments[currentIndex]
-        binding.pickerLayout.apply {
-            tvN.text = seg.n.toString()
-            tvX.text = seg.x.toString()
-            tvY.text = seg.y.toString()
-            tvZ.text = seg.z.toString()
-            btnSign.text = if (seg.isPositive) "+" else "-"
+    private fun deleteCurrentRoll() {
+        if (diceRolls.size > 1) {
+            diceRolls.removeAt(currentIndex)
+            if (currentIndex >= diceRolls.size) {
+                currentIndex = diceRolls.size - 1
+            }
+        } else {
+            diceRolls[0] = DiceRoll()
+        }
+        selectField(initialField)
+    }
 
-            val selectedColor = Color.parseColor("#F0F0F0")
+    private fun updateUI() {
+        if (diceRolls.isEmpty()) diceRolls.add(DiceRoll())
+        val roll = diceRolls[currentIndex]
+        
+        binding.pickerLayout.apply {
+            tvN.text = roll.n.toString()
+            tvX.text = roll.x.toString()
+            tvY.text = roll.y.toString()
+            tvZ.text = roll.z.toString()
+            btnSign.text = if (roll.isPositive) "+" else "-"
+
+            val highlightColor = Color.parseColor("#ADD8E6") // Light Blue
             val normalColor = Color.TRANSPARENT
             
-            tvN.setBackgroundColor(if (selectedField == Field.N) selectedColor else normalColor)
-            tvX.setBackgroundColor(if (selectedField == Field.X) selectedColor else normalColor)
-            tvY.setBackgroundColor(if (selectedField == Field.Y) selectedColor else normalColor)
-            tvZ.setBackgroundColor(if (selectedField == Field.Z) selectedColor else normalColor)
+            tvN.setBackgroundColor(if (selectedField == Field.N) highlightColor else normalColor)
+            tvX.setBackgroundColor(if (selectedField == Field.X) highlightColor else normalColor)
+            tvY.setBackgroundColor(if (selectedField == Field.Y) highlightColor else normalColor)
+            tvZ.setBackgroundColor(if (selectedField == Field.Z) highlightColor else normalColor)
         }
 
-        binding.btnComma.setBackgroundColor(if (seg.isFollowedByComma) Color.parseColor("#E0E0E0") else Color.TRANSPARENT)
-
-        binding.btnPrev.isEnabled = true
-        binding.btnPrev.alpha = if (currentIndex > 0) 1.0f else 0.5f
-
-        binding.tvPageIndicator.text = "${currentIndex + 1} / ${diceSegments.size}"
-        
         updateFullStringPreview()
     }
 
-    /**
-     * Updates the preview text display of the entire multi-segment dice expression.
-     * Highlights the segment currently being edited.
-     */
     private fun updateFullStringPreview() {
         val builder = StringBuilder()
-        var highlightStart = -1
-        var highlightEnd = -1
+        val spans = mutableListOf<Triple<Int, Int, Int>>() // Start, End, Index
 
-        diceSegments.forEachIndexed { index, seg ->
+        diceRolls.forEachIndexed { index, roll ->
             val start = builder.length
-            val nPart = if (seg.n > 1) "${seg.n}x " else ""
-            val xPart = if (seg.x > 1) "${seg.x}" else ""
-            val zPart = if (seg.z != 0) (if (seg.isPositive) "+${seg.z}" else "-${seg.z}") else ""
-            builder.append("${nPart}${xPart}d${seg.y}${zPart}")
             
-            if (index == currentIndex) {
-                highlightStart = start
-                highlightEnd = builder.length
-            }
+            // Notation rules:
+            // If N=1 don't include "Nx"
+            val nPart = if (roll.n != 1) "${roll.n}x " else ""
+            // If X=1 don't include "X"
+            val xPart = if (roll.x != 1) "${roll.x}" else ""
+            // If Z=0 don't include +/-Z
+            val zPart = if (roll.z != 0) (if (roll.isPositive) "+${roll.z}" else "-${roll.z}") else ""
+            
+            builder.append("${nPart}${xPart}d${roll.y}${zPart}")
+            val end = builder.length
+            spans.add(Triple(start, end, index))
 
-            if (index < diceSegments.size - 1) {
-                builder.append(if (seg.isFollowedByComma) ", " else " | ")
+            if (index < diceRolls.size - 1) {
+                val sep = roll.separator.ifEmpty { if (isCommaAllowed) "," else "|" }
+                builder.append(if (sep == ",") ", " else " | ")
             }
         }
 
         val spannable = SpannableString(builder.toString())
-        if (highlightStart != -1 && highlightEnd != -1) {
-            spannable.setSpan(
-                BackgroundColorSpan(Color.parseColor("#FFFF00")), // Yellow highlight
-                highlightStart,
-                highlightEnd,
-                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        for ((start, end, index) in spans) {
+            // Highlight current index
+            if (index == currentIndex) {
+                spannable.setSpan(BackgroundColorSpan(Color.YELLOW), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+            
+            // Tapping selection
+            spannable.setSpan(object : ClickableSpan() {
+                override fun onClick(widget: View) {
+                    currentIndex = index
+                    updateUI()
+                }
+                override fun updateDrawState(ds: android.text.TextPaint) {
+                    ds.isUnderlineText = false
+                }
+            }, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
+        
         binding.tvFullString.text = spannable
     }
 
-    /**
-     * Parses the initial input string into a list of [DiceSegment] objects.
-     */
     private fun parseInitialValue() {
         if (initialValue.isBlank()) return
-        diceSegments.clear()
+        diceRolls.clear()
         
-        val rawSegments = initialValue.split(Regex("(?<=[,|])|(?=[,|])"))
+        val parts = initialValue.split(Regex("(?<=[,|])|(?=[,|])"))
             .map { it.trim() }
             .filter { it.isNotEmpty() }
             
-        var currentSeg: DiceSegment? = null
+        var lastRoll: DiceRoll? = null
         
-        rawSegments.forEach { part ->
+        parts.forEach { part ->
             if (part == "|" || part == ",") {
-                currentSeg?.isFollowedByComma = (part == ",")
-                currentSeg = null
+                lastRoll?.separator = part
             } else {
                 val parsed = DiceRoller.parseCombo(part)
                 if (parsed != null) {
                     val (n, expr) = parsed
-                    val seg = DiceSegment(
+                    val roll = DiceRoll(
                         n = n,
                         x = expr.diceCount,
                         y = expr.sides,
                         z = Math.abs(expr.modifier),
                         isPositive = expr.modifier >= 0
                     )
-                    diceSegments.add(seg)
-                    currentSeg = seg
+                    diceRolls.add(roll)
+                    lastRoll = roll
                 }
             }
         }
     }
 
-    /**
-     * Serializes the current state back into a dice string and invokes the callback.
-     *
-     * @param shouldDismiss If true, dismisses the dialog after saving.
-     */
     private fun saveChangesAndDismiss(shouldDismiss: Boolean = false) {
         val result = StringBuilder()
-        diceSegments.forEachIndexed { index, seg ->
-            if (seg.y > 0) {
-                val nPart = if (seg.n > 1) "${seg.n}x " else ""
-                val xPart = if (seg.x > 1) "${seg.x}" else ""
-                val zPart = if (seg.z != 0) (if (seg.isPositive) "+${seg.z}" else "-${seg.z}") else ""
-                result.append("${nPart}${xPart}d${seg.y}${zPart}")
+        diceRolls.forEachIndexed { index, roll ->
+            if (roll.y > 0) {
+                val nPart = if (roll.n != 1) "${roll.n}x " else ""
+                val xPart = if (roll.x != 1) "${roll.x}" else ""
+                val zPart = if (roll.z != 0) (if (roll.isPositive) "+${roll.z}" else "-${roll.z}") else ""
+                result.append("${nPart}${xPart}d${roll.y}${zPart}")
                 
-                if (index < diceSegments.size - 1) {
-                    result.append(if (seg.isFollowedByComma) ", " else " | ")
+                if (index < diceRolls.size - 1) {
+                    val sep = roll.separator.ifEmpty { if (isCommaAllowed) "," else "|" }
+                    result.append(sep)
                 }
             }
         }
         
-        onDiceEntered?.invoke(result.toString().trimEnd { it == '|' || it == ' ' || it == ',' })
+        onDiceEntered?.invoke(result.toString())
         if (shouldDismiss) dismiss()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        saveChangesAndDismiss(false)
     }
 
     override fun onStart() {

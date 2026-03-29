@@ -13,7 +13,6 @@ It allows you to:
 *   Track **combat rounds**
 *   Maintain a rolling **event log**
 
-The app is designed for **fast, one-handed use during play**, relying heavily on taps, long‑presses, and gestures.
 
 ***
 
@@ -170,11 +169,36 @@ Behavior:
 
 ### Hit Dice / Dice Editor
 
-Swipe Dice Roller allows:
+editDiceRolls should use the the following:
++----------+----------+
+|       <Title>       |
+|  <diceRollsString>  |
+|                     |
+| [N]x[X]d[Y](+/-)[Z] | <- Dice Segment
+|                     |
+|      7  8  9  |     |
+|      4  5  6  ,     |
+|      1  2  3        |
+|     Del 0 (OK)      |
+|                     |
++----------+----------+
 
-*   Editing multi‑segment dice strings
-*   Changing repeat count, dice count, sides, modifiers
-*   Visual highlighting of active segment
+where:
+ diceRollString = NxXdY+Z(,|)NxXdY+Z written using concise notation described as:
+If N=1 don't include "Nx".
+If X=1 don't include "X".
+If Z=0 don't include +/-Z
+ 
+Caller function should specify if comma is allowed, if X or Y field is active.
+
+Tapping Del should delete last digit of active field until zero is reached.
+Long-press Del should splash dialog to delete dice roll segment.
+
+A Dice roll is defined as NxXdY+Z. A dice segment is one or more Dice rolls separated by a comma. Two or more dice roll segments are separated by a Pipe '|'
+
+Segments shall be selected by tapping the segment in the diceRollsString display.
+
+Only the active field will be highlighted and you will use light blue background.
 
 ***
 

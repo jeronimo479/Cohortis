@@ -21,12 +21,14 @@ import com.example.cohortis.databinding.ItemMemberBinding
  *
  * @param members The list of members in the party.
  * @param onHpChanged Callback when HP is updated (e.g., via HP modifier dialog).
+ * @param onHpComplete Callback when the HP edit session is finished.
  * @param onDamageTapped Callback when an attack roll is requested.
  * @param onMemberLongTapped Callback for editing or deleting a member.
  */
 class MemberAdapter(
     private var members: MutableList<Member>,
     private val onHpChanged: (Member, Int) -> Unit,
+    private val onHpComplete: (Member, Int, Int) -> Unit,
     private val onDamageTapped: (Member, String) -> Int,
     private val onMemberLongTapped: (Member) -> Unit
 ) : RecyclerView.Adapter<MemberAdapter.MemberViewHolder>() {
@@ -84,6 +86,7 @@ class MemberAdapter(
                     HpModifierDialogFragment.newInstance(
                         member = member,
                         onRollRequested = if (member.isPC) ({ m, s -> onDamageTapped(m, s) }) else null,
+                        onComplete = onHpComplete,
                         onApplied = { updatedMember ->
                             updateHpDisplay(tvHP, updatedMember)
                             tvName.setTextColor(if (updatedMember.hpCurrent <= 0) Color.GRAY else defaultNameColor)

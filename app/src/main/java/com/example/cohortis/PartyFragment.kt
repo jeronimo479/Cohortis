@@ -24,32 +24,28 @@ class PartyFragment : Fragment() {
 
     /**
      * Initializes the [RecyclerView] with the [PartyAdapter] and provided callbacks.
-     *
-     * @param parties The initial list of active parties.
-     * @param onHpChanged Callback for when a member's HP changes.
-     * @param onDamageTapped Callback for when a damage roll is triggered.
-     * @param onMemberLongTapped Callback for long-pressing a member.
-     * @param onOpenPartyLibrary Callback for opening the party library.
-     * @param onPartyRenameRequested Callback for renaming a party.
-     * @param onOpenMemberLibrary Callback for adding members to a party.
      */
     fun setupRecyclerView(
         parties: MutableList<Party>,
         onHpChanged: (Member, Int) -> Unit,
+        onHpComplete: (Member, Int, Int) -> Unit,
         onDamageTapped: (Member, String) -> Int,
         onMemberLongTapped: (Member, Party) -> Unit,
         onOpenPartyLibrary: (Party?) -> Unit,
         onPartyRenameRequested: (Party) -> Unit,
-        onOpenMemberLibrary: (Party) -> Unit
+        onOpenMemberLibrary: (Party) -> Unit,
+        onCreateMemberRequested: (Party) -> Unit
     ) {
         partyAdapter = PartyAdapter(
             parties, 
-            onHpChanged, 
+            onHpChanged,
+            onHpComplete,
             onDamageTapped, 
             onMemberLongTapped,
             { party -> onOpenPartyLibrary(party) },
             onPartyRenameRequested,
-            onOpenMemberLibrary
+            onOpenMemberLibrary,
+            onCreateMemberRequested
         )
         binding.rvParties.layoutManager = LinearLayoutManager(context)
         binding.rvParties.adapter = partyAdapter
@@ -57,8 +53,6 @@ class PartyFragment : Fragment() {
 
     /**
      * Updates the adapter with a fresh list of parties.
-     *
-     * @param newList The updated list of parties to display.
      */
     fun updateParties(newList: List<Party>) {
         if (::partyAdapter.isInitialized) {

@@ -39,16 +39,16 @@ data class Member(
     /**
      * Returns the name of the member formatted for display.
      * For clones, it includes the [cloneTag] as a prefix (e.g., "a) Zendra").
-     * Only returns the first word of the name.
      *
+     * @param full Boolean if true returns full name, else just first word.
      * @return A formatted display name string.
      */
-    fun getDisplayName(): String {
-        val nameBase = name.trim().split(" ").firstOrNull() ?: ""
+    fun getDisplayName(full: Boolean = false): String {
+        val nameToUse = if (full) name.trim() else (name.trim().split(" ").firstOrNull() ?: "")
         return if (cloneTag != 0.toChar()) {
-            "$cloneTag)$nameBase"
+            "$cloneTag)$nameToUse"
         } else {
-            nameBase
+            nameToUse
         }
     }
 

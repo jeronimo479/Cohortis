@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import java.util.UUID
 
 /**
  * Manages the persistence of application data using [SharedPreferences] and [Gson].
@@ -78,6 +79,18 @@ class DataManager(context: Context) {
         }
 
     /**
+     * Accesses the ID of the priority party, or null if none is set.
+     */
+    var priorityPartyId: UUID?
+        get() {
+            val idStr = prefs.getString("priorityPartyId", null)
+            return if (idStr != null) UUID.fromString(idStr) else null
+        }
+        set(value) {
+            prefs.edit().putString("priorityPartyId", value?.toString()).apply()
+        }
+
+    /**
      * Accesses the current round number from the round counter.
      */
     var currentRound: Int
@@ -92,12 +105,14 @@ class DataManager(context: Context) {
      * @param members The list of all members.
      * @param parties The list of all parties.
      * @param active The list of active parties.
+     * @param priorityId The ID of the priority party.
      * @param round The current round number.
      */
-    fun saveAll(members: List<Member>, parties: List<Party>, active: List<Party>, round: Int) {
+    fun saveAll(members: List<Member>, parties: List<Party>, active: List<Party>, priorityId: UUID?, round: Int) {
         memberLibrary = members.toMutableList()
         partyLibrary = parties.toMutableList()
         activeParties = active.toMutableList()
+        priorityPartyId = priorityId
         currentRound = round
     }
 

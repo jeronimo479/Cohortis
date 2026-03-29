@@ -1,17 +1,24 @@
 package com.example.cohortis
 
+import android.app.AlertDialog
 import android.app.Dialog
 import android.graphics.Color
 import android.os.Bundle
+import android.view.Gravity
+import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ListView
+import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.example.cohortis.databinding.FragmentEventBinding
+import java.text.SimpleDateFormat
+import java.util.*
 
 /**
  * Displays a rolling log of events (dice rolls, HP changes, etc.).
@@ -43,6 +50,11 @@ class EventFragment : Fragment() {
             true
         }
 
+        if (eventHistory.isEmpty()) {
+            val startTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+            addLog("Event Log started at $startTime")
+        }
+
         // Restore the two-line preview from stored history
         updatePreviewFromHistory()
     }
@@ -50,8 +62,6 @@ class EventFragment : Fragment() {
     /**
      * Adds a new message to the event log.
      * Safe to call even when the view is not created; it will store history only.
-     *
-     * NOTE: If addLog might be called from a background thread, keep the post{} below.
      */
     fun addLog(message: CharSequence) {
         if (eventHistory.size == MAX_HISTORY) {
@@ -61,6 +71,16 @@ class EventFragment : Fragment() {
 
         // Update UI only if view exists; schedule on UI thread safely.
         _binding?.root?.post { updatePreviewFromHistory() }
+    }
+
+    /**
+     * Clears the entire log history and adds a reset message.
+     */
+    fun clearLog() {
+        eventHistory.clear()
+        val startTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+        addLog("Event Log reset at $startTime")
+        updatePreviewFromHistory()
     }
 
     /**
@@ -89,22 +109,77 @@ class EventFragment : Fragment() {
         val bgColor = Color.parseColor("#222222") // Very Dark Gray
         val textColor = Color.parseColor("#00FF00") // Green
 
-        val container = LinearLayout(ctx).apply {
+        val rootContainer = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(bgColor)
-            setPadding(0, dp(16), 0, dp(32))
         }
+
+        // Title Bar
+        val titleBar = RelativeLayout(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(56)
+            )
+            setPadding(dp(16), 0, dp(16), 0)
+        }
+
+        val tvTitle = TextView(ctx).apply {
+            text = "Full Event Log"
+            setTextColor(Color.WHITE)
+            textSize = 20f
+            gravity = Gravity.CENTER_VERTICAL
+            val params = RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT,
+                RelativeLayout.LayoutParams.MATCH_PARENT
+            )
+            params.addRule(RelativeLayout.ALIGN_PARENT_START)
+            layoutParams = params
+        }
+
+        val btnDel = Button(ctx).apply {
+            text = "DEL"
+            setTextColor(Color.RED)
+            setBackgroundColor(Color.TRANSPARENT)
+            val params = RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT,
+                RelativeLayout.LayoutParams.MATCH_PARENT
+            )
+            params.addRule(RelativeLayout.ALIGN_PARENT_END)
+            layoutParams = params
+            
+            setOnClickListener {
+                AlertDialog.Builder(ctx)
+                    .setTitle("Clear Log")
+                    .setMessage("Clear the current event history?")
+                    .setPositiveButton("Clear") { _, _ ->
+                        clearLog()
+                        dialog.dismiss()
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
+
+            setOnLongClickListener {
+                performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                clearLog()
+                dialog.dismiss()
+                true
+            }
+        }
+
+        titleBar.addView(tvTitle)
+        titleBar.addView(btnDel)
+        rootContainer.addView(titleBar)
 
         val listView = ListView(ctx).apply {
             divider = null
             dividerHeight = 0
             setBackgroundColor(bgColor)
+            setPadding(0, 0, 0, dp(32))
+            clipToPadding = false
         }
 
-        // Snapshot so the dialog content is stable while open
-        val displayList: List<CharSequence> = eventHistory.toList()
-
-        val adapter = object : ArrayAdapter<CharSequence>(ctx, 0, displayList) {
+        val adapter = object : ArrayAdapter<CharSequence>(ctx, 0, eventHistory.toList()) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 val tv = (convertView as? TextView) ?: TextView(context).apply {
                     setTextColor(textColor)
@@ -118,15 +193,16 @@ class EventFragment : Fragment() {
         }
 
         listView.adapter = adapter
-        container.addView(
+        rootContainer.addView(
             listView,
             LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.MATCH_PARENT
+                0,
+                1f
             )
         )
 
-        dialog.setContentView(container)
+        dialog.setContentView(rootContainer)
 
         // Scroll to the newest entry
         listView.post {

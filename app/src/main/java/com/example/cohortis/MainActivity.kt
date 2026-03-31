@@ -21,6 +21,7 @@ import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
+import android.widget.GridLayout
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -588,9 +589,10 @@ class MainActivity : AppCompatActivity() {
      * @param onComplete Callback invoked when the user finishes and saves.
      */
     private fun editPartyDialog(party: Party, isNew: Boolean = false, onComplete: (() -> Unit)? = null) {
+        val dp = resources.displayMetrics.density
         val dialogView = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            val p = (16 * resources.displayMetrics.density).toInt()
+            val p = (16 * dp).toInt()
             setPadding(p, p, p, p)
         }
         
@@ -608,6 +610,7 @@ class MainActivity : AppCompatActivity() {
             isChecked = if (isNew) true else party.isActive
             setTextColor(Color.BLACK)
             isEnabled = party.name.isNotEmpty()
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
 
         val cbPriority = CheckBox(this).apply {
@@ -615,17 +618,26 @@ class MainActivity : AppCompatActivity() {
             isChecked = (party.id == dataManager.priorityPartyId)
             setTextColor(Color.BLACK)
             isEnabled = party.name.isNotEmpty()
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
 
-        val membersContainer = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
+        val rowCheckboxes = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            addView(cbActive)
+            addView(cbPriority)
+        }
+
+        val membersContainer = GridLayout(this).apply {
+            columnCount = 2
+            alignmentMode = GridLayout.ALIGN_BOUNDS
+            useDefaultMargins = true
             setPadding(8, 8, 8, 8)
         }
 
         val scrollMembers = ScrollView(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                (200 * resources.displayMetrics.density).toInt()
+                (200 * dp).toInt()
             )
             isVerticalScrollBarEnabled = true
             isScrollbarFadingEnabled = false
@@ -643,20 +655,17 @@ class MainActivity : AppCompatActivity() {
                 party.members.forEach { member ->
                     val row = LinearLayout(this).apply {
                         orientation = LinearLayout.HORIZONTAL
-                        setPadding(0, 2, 0, 2)
+                        setPadding(4, 2, 4, 2)
                         gravity = android.view.Gravity.CENTER_VERTICAL
+                        val params = GridLayout.LayoutParams()
+                        params.width = 0
+                        params.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+                        layoutParams = params
                     }
-                    val nameView = TextView(this).apply {
-                        text = member.getDisplayName()
-                        setTextColor(Color.BLACK)
-                        textSize = 14f
-                        layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-                    }
-                    val btnRemove = Button(this).apply {
+                    val btnRemove = Button(this, null, 0, android.R.style.Widget_Material_Button_Borderless).apply {
                         text = "X"
                         setTextColor(Color.RED)
-                        setBackgroundColor(Color.TRANSPARENT)
-                        val size = (40 * resources.displayMetrics.density).toInt()
+                        val size = (32 * dp).toInt()
                         layoutParams = LinearLayout.LayoutParams(size, size)
                         setPadding(0, 0, 0, 0)
                         setOnClickListener {
@@ -670,8 +679,14 @@ class MainActivity : AppCompatActivity() {
                                 .show()
                         }
                     }
-                    row.addView(nameView)
+                    val nameView = TextView(this).apply {
+                        text = member.getDisplayName(full = false)
+                        setTextColor(Color.BLACK)
+                        textSize = 14f
+                        layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                    }
                     row.addView(btnRemove)
+                    row.addView(nameView)
                     membersContainer.addView(row)
                 }
             }
@@ -679,8 +694,9 @@ class MainActivity : AppCompatActivity() {
         refreshMembers()
         
         val btnAddFromLibrary = Button(this).apply {
-            text = "Add Member from Library"
+            text = "From Library"
             isEnabled = party.name.isNotEmpty()
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             setOnClickListener {
                 showMemberLibraryManager(party) {
                     refreshMembers()
@@ -689,12 +705,36 @@ class MainActivity : AppCompatActivity() {
         }
         
         val btnCreateNewMember = Button(this).apply {
-            text = "Create Member"
+            text = "Create"
             isEnabled = party.name.isNotEmpty()
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             setOnClickListener {
                 createNewMember(party) {
                     refreshMembers()
                 }
+            }
+        }
+
+        val rowMemberButtons = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            val tvLabel = TextView(this@MainActivity).apply {
+                text = "Member: "
+                setTextColor(Color.BLACK)
+                setPadding(0, 0, 8, 0)
+            }
+            addView(tvLabel)
+            addView(btnAddFromLibrary)
+            addView(btnCreateNewMember)
+        }
+
+        val btnResetAllHp = Button(this).apply {
+            text = "Reset All HP"
+            isEnabled = party.name.isNotEmpty()
+            setOnClickListener {
+                party.members.forEach { it.hpCurrent = it.hpFull }
+                refreshActiveParties()
+                Toast.makeText(this@MainActivity, "All HP Reset", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -703,14 +743,14 @@ class MainActivity : AppCompatActivity() {
             cbPriority.isEnabled = hasName
             btnAddFromLibrary.isEnabled = hasName
             btnCreateNewMember.isEnabled = hasName
+            btnResetAllHp.isEnabled = hasName
             if (hasName && isNew && !cbActive.isChecked) cbActive.isChecked = true
         }
 
         dialogView.addView(etName)
-        dialogView.addView(cbActive)
-        dialogView.addView(cbPriority)
-        dialogView.addView(btnAddFromLibrary)
-        dialogView.addView(btnCreateNewMember)
+        dialogView.addView(rowCheckboxes)
+        dialogView.addView(rowMemberButtons)
+        dialogView.addView(btnResetAllHp)
         dialogView.addView(scrollMembers)
 
         val builder = AlertDialog.Builder(this)

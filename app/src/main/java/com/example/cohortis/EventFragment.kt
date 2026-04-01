@@ -55,7 +55,7 @@ class EventFragment : Fragment() {
             addLog("Event Log started at $startTime")
         }
 
-        // Restore the two-line preview from stored history
+        // Restore the preview from stored history
         updatePreviewFromHistory()
     }
 
@@ -84,15 +84,15 @@ class EventFragment : Fragment() {
     }
 
     /**
-     * Updates the two-line preview.    
+     * Updates the four-line preview.    
      */
     private fun updatePreviewFromHistory() {
         val size = eventHistory.size
-        val last = if (size >= 1) eventHistory.last() else null
-        val secondLast = if (size >= 2) eventHistory.elementAt(size - 2) else null
-
-        binding.tvLog2.text = last ?: ""
-        binding.tvLog1.text = secondLast ?: ""
+        
+        binding.tvLog4.text = if (size >= 1) eventHistory.elementAt(size - 1) else ""
+        binding.tvLog3.text = if (size >= 2) eventHistory.elementAt(size - 2) else ""
+        binding.tvLog2.text = if (size >= 3) eventHistory.elementAt(size - 3) else ""
+        binding.tvLog1.text = if (size >= 4) eventHistory.elementAt(size - 4) else ""
     }
 
     /**

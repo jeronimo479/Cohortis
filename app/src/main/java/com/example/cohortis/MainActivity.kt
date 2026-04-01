@@ -1,5 +1,6 @@
 package com.example.cohortis
 
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.app.Dialog
 import android.graphics.Color
@@ -22,7 +23,6 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.GridLayout
-import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -168,7 +168,7 @@ class MainActivity : AppCompatActivity() {
         binding.root.post {
             partyFragment?.setupRecyclerView(
                 parties = activeParties,
-                onHpChanged = { member, oldHp ->
+                onHpChanged = { member, _ ->
                     updateAllReferences(member)
                     refreshActiveParties()
                 },
@@ -241,6 +241,7 @@ class MainActivity : AppCompatActivity() {
      * Configures the gesture detectors for the round counter UI.
      * Supports single tap (next), double tap (prev), long press + swipe (reset).
      */
+    @SuppressLint("ClickableViewAccessibility")
     private fun setupRoundCounter() {
         binding.content.tvRoundNumber.text = currentRound.toString()
         
@@ -286,14 +287,12 @@ class MainActivity : AppCompatActivity() {
                             currentRound = 0
                             updateRoundDisplay()
                             logRoundChange("Rounds Reset")
-                            isLongPressing = false // Resetted
+                            isLongPressing = false // Reset
                         }
                     }
                 }
                 MotionEvent.ACTION_UP -> {
-                    if (event.action == MotionEvent.ACTION_UP) {
-                        v.performClick()
-                    }
+                    v.performClick()
                     isLongPressing = false
                 }
                 MotionEvent.ACTION_CANCEL -> {
@@ -366,7 +365,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Helper to setup a simple +/- stepper for an [EditText].
+     * Helper to set up a simple +/- stepper for an [EditText].
      */
     private fun setupStepper(valueView: EditText, minusBtn: View, plusBtn: View, min: Int, max: Int, onChanged: ((Int) -> Unit)? = null) {
         minusBtn.setOnClickListener {
@@ -432,9 +431,9 @@ class MainActivity : AppCompatActivity() {
                 val oldHpCurrent = member.hpCurrent
                 val editTitle = if (cbIsPC.isChecked) "Edit HP" else "Edit HD"
                 editHpDiceRolls(
-                    title = editTitle, 
-                    initialValue = etHitDice.text.toString(), 
-                    isPC = cbIsPC.isChecked, 
+                    title = editTitle,
+                    initialValue = etHitDice.text.toString(),
+                    isPC = cbIsPC.isChecked,
                     isHpOrHd = true
                 ) { diceStr ->
                     etHitDice.setText(diceStr)
@@ -507,9 +506,9 @@ class MainActivity : AppCompatActivity() {
             etDamageRolls.isFocusable = false
             etDamageRolls.setOnClickListener {
                 editHpDiceRolls(
-                    title = "Damage Rolls", 
-                    initialValue = etDamageRolls.text.toString(), 
-                    isPC = cbIsPC.isChecked, 
+                    title = "Damage Rolls",
+                    initialValue = etDamageRolls.text.toString(),
+                    isPC = cbIsPC.isChecked,
                     isHpOrHd = false
                 ) { diceStr ->
                     etDamageRolls.setText(diceStr)
@@ -838,49 +837,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Slowly erases the text in the given EditText.
-     *
-     * @param editText The EditText to clear character by character.
-     */
-    private fun slowlyEraseName(editText: EditText) {
-        val text = editText.text.toString()
-        if (text.isEmpty()) return
-        
-        val handler = android.os.Handler(android.os.Looper.getMainLooper())
-        var currentLength = text.length
-        
-        val runnable = object : Runnable {
-            override fun run() {
-                if (currentLength > 0) {
-                    currentLength--
-                    editText.setText(text.substring(0, currentLength))
-                    editText.setSelection(currentLength)
-                    handler.postDelayed(this, 50)
-                }
-            }
-        }
-        handler.postDelayed(runnable, 50)
-    }
 
-    /**
-     * Entry point for creating a new party.
-     *
-     * @param onAdded Optional callback for when the party is added.
-     */
-    private fun createNewParty(onAdded: (() -> Unit)? = null) {
-        val tempParty = Party(id = UUID.randomUUID(), name = "", isActive = true)
-        editPartyDialog(tempParty, isNew = true, onComplete = onAdded)
-    }
-
-    /**
-     * Helper to wrap the creation logic for callers.
-     *
-     * @param onAdded Optional callback.
-     */
-    private fun startCreateNewPartyFlow(onAdded: (() -> Unit)? = null) {
-        createNewParty(onAdded)
-    }
 
     /**
      * Shows the app settings dialog, allowing import/export and master reset.
@@ -1050,6 +1007,7 @@ class MainActivity : AppCompatActivity() {
      * @param targetParty If provided, selecting a member adds it to this party.
      * @param onDismiss Callback invoked when the library dialog is closed.
      */
+    @SuppressLint("ClickableViewAccessibility")
     private fun showMemberLibraryManager(targetParty: Party? = null, onDismiss: (() -> Unit)? = null) {
         val dialog = Dialog(this, android.R.style.Theme_Material_Light_NoActionBar_Fullscreen)
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -1095,13 +1053,13 @@ class MainActivity : AppCompatActivity() {
                 if (pos != -1) {
                     val member = memberLibrary[pos]
                     showEditMemberDialog(member, fromLibrary = true, onChanged = {
-                        libBinding.lvItems.adapter = ArrayAdapter<String>(this@MainActivity, android.R.layout.simple_list_item_1, memberLibrary.map { it.name })
+                        libBinding.lvItems.adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_list_item_1, memberLibrary.map { it.name })
                     })
                 }
             }
         })
 
-        libBinding.lvItems.setOnTouchListener { v, event -> 
+        libBinding.lvItems.setOnTouchListener { v, event ->
             val handled = detector.onTouchEvent(event)
             if (handled && event.action == MotionEvent.ACTION_UP) {
                 v.performClick()
@@ -1111,7 +1069,7 @@ class MainActivity : AppCompatActivity() {
 
         libBinding.btnCreate.setOnClickListener {
             createNewMember {
-                libBinding.lvItems.adapter = ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, memberLibrary.map { it.name })
+                libBinding.lvItems.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, memberLibrary.map { it.name })
             }
         }
 
@@ -1178,8 +1136,10 @@ class MainActivity : AppCompatActivity() {
     private fun createNewMember(targetParty: Party? = null, onChanged: (() -> Unit)? = null) {
         val newMember = Member(name = "", classLevels = "")
         memberLibrary.add(newMember)
-        if (targetParty != null) {
-            targetParty.members.add(newMember)
+        when {
+            targetParty != null -> {
+                targetParty.members.add(newMember)
+            }
         }
         saveData()
         refreshActiveParties()
@@ -1197,6 +1157,7 @@ class MainActivity : AppCompatActivity() {
         libBinding.tvLibraryTitle.text = "Party Library"
         libBinding.btnCreate.text = "Create Party"
         val adapter = object : ArrayAdapter<Party>(this, R.layout.item_party_library, partyLibrary) {
+            @SuppressLint("ClickableViewAccessibility")
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.item_party_library, parent, false)
                 val party = getItem(position)!!
@@ -1229,7 +1190,7 @@ class MainActivity : AppCompatActivity() {
         libBinding.lvItems.adapter = adapter
         libBinding.btnCreate.setOnClickListener { 
             val tempParty = Party(id = UUID.randomUUID(), name = "", isActive = true)
-            editPartyDialog(tempParty, isNew = true) { 
+            editPartyDialog(tempParty, isNew = true) {
                 adapter.notifyDataSetChanged() 
             }
         }

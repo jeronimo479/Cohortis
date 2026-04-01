@@ -27,7 +27,7 @@
         app:layout_constraintStart_toStartOf="parent" />
 
     <!-- Round Counter UI -->
-    <com.google.android.material.card.MaterialCardView
+    <com.example.cohortis.RoundCounterCardView
         android:id="@+id/roundCounterCard"
         android:layout_width="60dp"
         android:layout_height="60dp"
@@ -46,6 +46,6 @@
             android:text="1"
             android:textSize="24sp"
             android:textStyle="bold" />
-    </com.google.android.material.card.MaterialCardView>
+    </com.example.cohortis.RoundCounterCardView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

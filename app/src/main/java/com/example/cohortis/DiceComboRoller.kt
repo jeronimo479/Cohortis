@@ -47,7 +47,11 @@ object DiceRoller {
      * @return A string representation of the expression.
      */
     fun formatExpr(expr: DiceExpr): String {
-        val base = if (expr.diceCount == 1) "d${expr.sides}" else "${expr.diceCount}d${expr.sides}"
+        val base = if (expr.diceCount == 1)
+            "d${expr.sides}"
+        else
+            "${expr.diceCount}d${expr.sides}"
+
         return when {
             expr.modifier > 0 -> "$base+${expr.modifier}"
             expr.modifier < 0 -> "$base${expr.modifier}"
@@ -104,11 +108,13 @@ object DiceRoller {
                 if (parsed != null) {
                     val (repeatCount, expr) = parsed
                     repeat(repeatCount) {
-                        results.add(AttackResult(
-                            d20 = Random.nextInt(1, 21),
-                            damageExpr = formatExpr(expr),
-                            damageTotal = rollDice(expr)
-                        ))
+                        results.add(
+                            AttackResult(
+                                d20 = Random.nextInt(1, 21),
+                                damageExpr = formatExpr(expr),
+                                damageTotal = rollDice(expr)
+                            )
+                        )
                     }
                 }
             }

@@ -24,6 +24,16 @@ class PartyFragment : Fragment() {
 
     /**
      * Initializes the [RecyclerView] with the [PartyAdapter] and provided callbacks.
+     *
+     * @param parties The initial list of active parties.
+     * @param onHpChanged Callback for when a member's HP changes.
+     * @param onHpComplete <tbd>
+     * @param onDamageTapped Callback for when a damage roll is triggered.
+     * @param onMemberLongTapped Callback for long-pressing a member.
+     * @param onOpenPartyLibrary Callback for opening the party library.
+     * @param onPartyRenameRequested Callback for renaming a party.
+     * @param onOpenMemberLibrary Callback for adding members to a party.
+     * @param onCreateMemberRequested <tbd>.
      */
     fun setupRecyclerView(
         parties: MutableList<Party>,
@@ -53,6 +63,8 @@ class PartyFragment : Fragment() {
 
     /**
      * Updates the adapter with a fresh list of parties.
+     *
+     * @param newList The updated list of parties to display.
      */
     fun updateParties(newList: List<Party>) {
         if (::partyAdapter.isInitialized) {

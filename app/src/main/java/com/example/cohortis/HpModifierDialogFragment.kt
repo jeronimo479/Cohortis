@@ -35,6 +35,16 @@ class HpModifierDialogFragment : DialogFragment() {
     private var startVal: Int = 0
 
     companion object {
+        /**
+         * Creates a new instance of the HP modifier dialog.
+         *
+         * @param member The member whose HP is being modified.
+         * @param isFromEdit If true, modifying HP Full. If false, modifying HP Current.
+         * @param stayOpen If true, the dialog won't auto-dismiss after applying changes.
+         * @param onRollRequested Optional callback for handling dice rolls (e.g., for logging).
+         * @param onComplete Call eventLog to show accepted hp delta.
+         * @param onApplied Callback invoked after the HP value has been updated.
+         */
         fun newInstance(
             member: Member,
             isFromEdit: Boolean = false,
@@ -96,6 +106,7 @@ class HpModifierDialogFragment : DialogFragment() {
             updateDisplayAndDismiss()
         }
 
+        // Apply modifier (+ / -)
         binding.btnPlus.setOnClickListener {
             applyModifier(accumulator)
         }
@@ -108,6 +119,7 @@ class HpModifierDialogFragment : DialogFragment() {
             }
         }
 
+        // Tapping the Result (Box 3) sets the value directly
         binding.btnBox3.setOnClickListener {
             if (isFromEdit) {
                 member.hpFull = accumulator.coerceIn(0, 999)
@@ -144,6 +156,14 @@ class HpModifierDialogFragment : DialogFragment() {
         }
     }
 
+    /**
+     * Creates a clickable spannable string for members with multiple hit dice segments.
+     * Dice roll strings use the following format:
+     * [N*|Nx][X]dY[+Z|-Z][(,l|)[N*|Nx][X]dY[+Z|-Z]]...
+     * For Example:
+     *  "6x8d4+7 , d8"
+     *  "8d6 , d10 | 3x5d6"
+     */
     private fun setupDiceSpannable(rawText: String) {
         val segments = rawText.split(Regex("\\s*[|l,]\\s*")).filter { it.isNotBlank() }
         if (segments.size <= 1) {
@@ -181,6 +201,9 @@ class HpModifierDialogFragment : DialogFragment() {
         binding.btnBox1.isClickable = true
     }
 
+    /**
+     * Executes a dice roll for a specific segment and updates the accumulator.
+     */
     private fun rollSegment(segment: String) {
         binding.root.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
         val rollResult = onRollRequested?.invoke(member, segment) ?: DiceRoller.rollSegmentTotal(segment)
@@ -189,10 +212,17 @@ class HpModifierDialogFragment : DialogFragment() {
         updateAccumulatorDisplay()
     }
 
+    /** Updates the text display of the current accumulator value. */
     private fun updateAccumulatorDisplay() {
         binding.btnBox3.text = accumulator.toString()
     }
 
+    /**
+     * Applies a positive or negative modifier to the member's HP.
+     * Includes scaling logic for HP Current when HP Full is modified.
+     *
+     * @param mod The amount to add or subtract.
+     */
     private fun applyModifier(mod: Int) {
         if (isFromEdit) {
             val oldFull = member.hpFull
@@ -208,6 +238,9 @@ class HpModifierDialogFragment : DialogFragment() {
         updateDisplay()
     }
 
+    /**
+     * Updates UI and dismisses the dialog with a slight delay for visual confirmation.
+     */
     private fun updateDisplayAndDismiss() {
         updateDisplay()
         val endVal = if (isFromEdit) member.hpFull else member.hpCurrent
@@ -219,9 +252,13 @@ class HpModifierDialogFragment : DialogFragment() {
         binding.btnBox1.isEnabled = false
         binding.btnOk.isEnabled = false
         
+        // Display change for a very brief time, then close.
         binding.root.postDelayed({ if (isAdded) dismiss() }, 250)
     }
 
+    /**
+     * Resets local state and updates the main UI display for the member.
+     */
     private fun updateDisplay() {
         if (isFromEdit) {
             binding.tvBox2Display.text = "${member.hpFull} : HP FULL"
@@ -229,6 +266,8 @@ class HpModifierDialogFragment : DialogFragment() {
             binding.tvBox2Display.text = "${member.hpCurrent} : CURRENT"
         }
         onApplied?.invoke(member)
+
+        // Reset accumulator for next modifier
         accumulator = 0
         updateAccumulatorDisplay()
     }

@@ -35,7 +35,19 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
     private var selectedField = Field.X
     private var isFirstDigitAfterSelection = true
 
-    enum class Field { N, X, Y, Z }
+    /**
+     * Represents the specific part of a dice expression currently being edited.
+     */
+    enum class Field { 
+        /** Repeat count (N) in "Nx XdY+Z". */
+        N, 
+        /** Number of dice (X) in "Nx XdY+Z". */
+        X, 
+        /** Number of sides (Y) in "Nx XdY+Z". */
+        Y, 
+        /** Modifier (Z) in "Nx XdY+Z". */
+        Z 
+    }
 
     /**
      * Internal data structure representing a single dice roll (NxXdY+Z).
@@ -50,6 +62,15 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
     )
 
     companion object {
+        /**
+         * Creates a new instance of the swipe dice roller.
+         *
+         * @param title The title displayed at the top of the dialog.
+         * @param initialValue The starting dice string to edit.
+         * @param isPC If true, defaults selection to sides (Y) instead of count (X).
+         * @param isHpOrHd <tbd>
+         * @param onDiceEntered Callback invoked whenever the dice string changes.
+         */
         fun newInstance(
             title: String,
             initialValue: String,
@@ -102,6 +123,9 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
         }
     }
 
+    /**
+     * Configures click listeners for the individual fields (N, X, Y, Z) and special buttons.
+     */
     private fun setupSelectionListeners() {
         binding.pickerLayout.apply {
             tvN.setOnClickListener { selectField(Field.N) }
@@ -116,12 +140,18 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
         }
     }
 
+    /**
+     * Sets the currently active field for editing.
+     */
     private fun selectField(field: Field) {
         selectedField = field
         isFirstDigitAfterSelection = true
         updateUI()
     }
 
+    /**
+     * Sets up the numeric keypad and deletion buttons.
+     */
     private fun setupKeypad() {
         val digitButtons = listOf(
             binding.btn0 to 0, binding.btn1 to 1, binding.btn2 to 2,
@@ -146,6 +176,9 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
         }
     }
 
+    /**
+     * Configures the next/previous navigation buttons for cycling through segments.
+     */
     private fun addSeparator(sep: String) {
         diceRolls[currentIndex].separator = sep
         diceRolls.add(currentIndex + 1, DiceRoll())
@@ -190,7 +223,10 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
         }
     }
 
-    private fun onDelTapped() {
+    /**
+     * Removes the last digit from the currently selected field.
+     */
+     private fun onDelTapped() {
         val roll = diceRolls[currentIndex]
         val currentStr = when (selectedField) {
             Field.N -> roll.n.toString()
@@ -256,6 +292,10 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
         updateFullStringPreview()
     }
 
+    /**
+     * Updates the preview text display of the entire multi-segment dice expression.
+     * Highlights the segment currently being edited.
+     */
     private fun updateFullStringPreview() {
         val builder = StringBuilder()
         val spans = mutableListOf<Triple<Int, Int, Int>>() // Start, End, Index
@@ -303,6 +343,9 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
         binding.tvFullString.text = spannable
     }
 
+    /**
+     * Parses the initial input string into a list of [DiceSegment] objects.
+     */
     private fun parseInitialValue() {
         if (initialValue.isBlank()) return
         diceRolls.clear()
@@ -334,6 +377,11 @@ class SwipeDiceRollerDialogFragment : DialogFragment() {
         }
     }
 
+    /**
+     * Serializes the current state back into a dice string and invokes the callback.
+     *
+     * @param shouldDismiss If true, dismisses the dialog after saving.
+     */
     private fun saveChangesAndDismiss(shouldDismiss: Boolean = false) {
         val result = StringBuilder()
         diceRolls.forEachIndexed { index, roll ->

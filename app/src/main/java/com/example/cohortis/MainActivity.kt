@@ -161,7 +161,8 @@ class MainActivity : AppCompatActivity() {
         partyFragment = PartyFragment()
         eventFragment = EventFragment()
 
-        supportFragmentManager.beginTransaction()
+        supportFragmentManager
+            .beginTransaction()
             .replace(R.id.party_container, partyFragment!!)
             .replace(R.id.event_container, eventFragment!!)
             .commitNow()
@@ -288,7 +289,7 @@ class MainActivity : AppCompatActivity() {
                             currentRound = 0
                             updateRoundDisplay()
                             logRoundChange(getString(R.string.rounds_reset))
-                            isLongPressing = false // Reset
+                            isLongPressing = false
                         }
                     }
                 }

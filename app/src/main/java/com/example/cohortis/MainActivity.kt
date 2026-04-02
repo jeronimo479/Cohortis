@@ -1,12 +1,15 @@
 package com.example.cohortis
 
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.app.Dialog
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
+import android.text.Editable
 import android.text.Spannable
 import android.text.SpannableStringBuilder
+import android.text.TextWatcher
 import android.view.GestureDetector
 import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
@@ -14,11 +17,15 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
+import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
+import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
-import android.widget.ImageButton
+import android.widget.GridLayout
 import android.widget.LinearLayout
+import android.widget.RelativeLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -70,7 +77,17 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.btnAddParty.setOnClickListener {
-            createNewParty()
+            showPartyLibraryManager()
+        }
+
+        binding.btnAddParty.setOnLongClickListener {
+            val tempParty = Party(id = UUID.randomUUID(), name = "", isActive = true)
+            editPartyDialog(tempParty, isNew = true)
+            true
+        }
+
+        binding.tvAppTitle.setOnClickListener {
+            showMemberLibraryManager()
         }
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.mainRoot) { v, insets ->
@@ -93,13 +110,6 @@ class MainActivity : AppCompatActivity() {
         memberLibrary = dataManager.memberLibrary.apply { sortBy { it.name.lowercase() } }
         
         val loadedParties = dataManager.partyLibrary
-        
-        // Ensure only one priority party exists
-        val priorities = loadedParties.filter { it.isPriority }
-        if (priorities.size > 1) {
-            priorities.drop(1).forEach { it.isPriority = false }
-        }
-
         sortPartyLibrary(loadedParties)
         partyLibrary = loadedParties
 
@@ -113,7 +123,9 @@ class MainActivity : AppCompatActivity() {
      * @param list The mutable list of parties to sort.
      */
     private fun sortPartyLibrary(list: MutableList<Party>) {
-        val priority = list.find { it.isPriority }
+        val priorityId = dataManager.priorityPartyId
+        val priority = list.find { it.id == priorityId }
+        
         if (priority != null) {
             list.remove(priority)
             list.sortBy { it.name.lowercase() }
@@ -127,9 +139,10 @@ class MainActivity : AppCompatActivity() {
      * Updates the list of currently active parties, filtered and sorted by priority.
      */
     private fun updateActivePartiesList() {
+        val priorityId = dataManager.priorityPartyId
         activeParties = partyLibrary.asSequence()
             .filter { it.isActive }
-            .sortedWith(compareByDescending<Party> { it.isPriority }
+            .sortedWith(compareByDescending<Party> { it.id == priorityId }
                 .thenBy { it.name.lowercase() })
             .toMutableList()
     }
@@ -138,7 +151,7 @@ class MainActivity : AppCompatActivity() {
      * Persists all current data using the [DataManager].
      */
     private fun saveData() {
-        dataManager.saveAll(memberLibrary, partyLibrary, activeParties, currentRound)
+        dataManager.saveAll(memberLibrary, partyLibrary, activeParties, dataManager.priorityPartyId, currentRound)
     }
 
     /**
@@ -157,11 +170,13 @@ class MainActivity : AppCompatActivity() {
         binding.root.post {
             partyFragment?.setupRecyclerView(
                 parties = activeParties,
-                onHpChanged = { member, oldHp ->
+                onHpChanged = { member, _ ->
                     updateAllReferences(member)
                     refreshActiveParties()
-                    if (oldHp != member.hpCurrent) {
-                        eventFragment?.addLog("${member.getDisplayName()} hpCurrent $oldHp -> ${member.hpCurrent}")
+                },
+                onHpComplete = { member, start, end ->
+                    if (start != end) {
+                        eventFragment?.addLog("${member.getDisplayName()} $start -> $end hpCurrent")
                     }
                 },
                 onDamageTapped = { member, segment ->
@@ -170,14 +185,21 @@ class MainActivity : AppCompatActivity() {
                 onMemberLongTapped = { member: Member, party: Party ->
                     showEditMemberDialog(member, fromParty = party)
                 },
-                onOpenPartyLibrary = { _ ->
-                    showPartyLibraryManager()
+                onOpenPartyLibrary = { party ->
+                    if (party != null) {
+                        editPartyDialog(party)
+                    } else {
+                        showPartyLibraryManager()
+                    }
                 },
                 onPartyRenameRequested = { party ->
-                    showPartyEditDialog(party)
+                    editPartyDialog(party)
                 },
                 onOpenMemberLibrary = { party ->
                     showMemberLibraryManager(party)
+                },
+                onCreateMemberRequested = { party ->
+                    createNewMember(party)
                 }
             )
             refreshActiveParties()
@@ -221,6 +243,7 @@ class MainActivity : AppCompatActivity() {
      * Configures the gesture detectors for the round counter UI.
      * Supports single tap (next), double tap (prev), long press + swipe (reset).
      */
+    @SuppressLint("ClickableViewAccessibility")
     private fun setupRoundCounter() {
         binding.content.tvRoundNumber.text = currentRound.toString()
         
@@ -232,7 +255,7 @@ class MainActivity : AppCompatActivity() {
                 currentRound++
                 if (currentRound > 99) currentRound = 0
                 updateRoundDisplay()
-                logRoundChange("Round $currentRound started")
+                logRoundChange(getString(R.string.round_started, currentRound))
                 return true
             }
 
@@ -240,7 +263,7 @@ class MainActivity : AppCompatActivity() {
                 if (currentRound > 0) {
                     currentRound--
                     updateRoundDisplay()
-                    logRoundChange("Round decreased to $currentRound")
+                    logRoundChange(getString(R.string.round_decreased, currentRound))
                 }
                 return true
             }
@@ -265,15 +288,13 @@ class MainActivity : AppCompatActivity() {
                         if (diffX < -100) { // Slide left threshold
                             currentRound = 0
                             updateRoundDisplay()
-                            logRoundChange("Rounds Reset")
-                            isLongPressing = false // Resetted
+                            logRoundChange(getString(R.string.rounds_reset))
+                            isLongPressing = false // Reset
                         }
                     }
                 }
                 MotionEvent.ACTION_UP -> {
-                    if (event.action == MotionEvent.ACTION_UP) {
-                        v.performClick()
-                    }
+                    v.performClick()
                     isLongPressing = false
                 }
                 MotionEvent.ACTION_CANCEL -> {
@@ -346,7 +367,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Helper to setup a simple +/- stepper for an [EditText].
+     * Helper to set up a simple +/- stepper for an [EditText].
      */
     private fun setupStepper(valueView: EditText, minusBtn: View, plusBtn: View, min: Int, max: Int, onChanged: ((Int) -> Unit)? = null) {
         minusBtn.setOnClickListener {
@@ -368,6 +389,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
+     * Helper to open the dice roller dialog.
+     */
+    private fun editHpDiceRolls(title: String, initialValue: String, isPC: Boolean, isHpOrHd: Boolean, onComplete: (String) -> Unit) {
+        SwipeDiceRollerDialogFragment.newInstance(
+            title = title,
+            initialValue = initialValue,
+            isPC = isPC,
+            isHpOrHd = isHpOrHd,
+            onDiceEntered = onComplete
+        ).show(supportFragmentManager, "swipe_dice_${title.lowercase().replace(" ", "_")}")
+    }
+
+    /**
      * Shows a dialog to edit the details of a [Member].
      *
      * @param member The member to edit.
@@ -381,8 +415,70 @@ class MainActivity : AppCompatActivity() {
         fromLibrary: Boolean = false,
         onChanged: (() -> Unit)? = null
     ) {
+        val dp = resources.displayMetrics.density
         val dialogBinding = DialogEditMemberBinding.inflate(LayoutInflater.from(this))
         
+        val titleLayout = RelativeLayout(this).apply {
+            val p = (16 * dp).toInt()
+            setPadding(p, p, p, 0)
+        }
+        val tvTitle = TextView(this).apply {
+            text = if (member.cloneTag != 0.toChar()) getString(R.string.edit_clone) else getString(R.string.edit_member)
+            setTextColor(Color.BLACK)
+            textSize = 20f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        titleLayout.addView(tvTitle)
+
+        var dialog: AlertDialog? = null
+
+        val btnDel = TextView(this).apply {
+            text = "DEL"
+            setTextColor(Color.RED)
+            textSize = 16f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setPadding((16 * dp).toInt(), 0, 0, 0)
+            layoutParams = RelativeLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                addRule(RelativeLayout.ALIGN_PARENT_END)
+                addRule(RelativeLayout.CENTER_VERTICAL)
+            }
+            setOnClickListener {
+                if (fromParty != null) {
+                    AlertDialog.Builder(this@MainActivity)
+                        .setTitle(getString(R.string.remove_member_title))
+                        .setMessage(getString(R.string.remove_member_msg, member.getDisplayName()))
+                        .setPositiveButton(getString(R.string.remove_btn)) { _, _ ->
+                            fromParty.members.removeAll { it.id == member.id }
+                            refreshActiveParties()
+                            onChanged?.invoke()
+                            dialog?.dismiss()
+                        }
+                        .setNegativeButton(getString(R.string.skip), null)
+                        .show()
+                } else {
+                    // fromLibrary or general delete
+                    AlertDialog.Builder(this@MainActivity)
+                        .setTitle(getString(R.string.permanent_delete_title))
+                        .setMessage(getString(R.string.permanent_delete_msg, member.name))
+                        .setPositiveButton(getString(R.string.delete_btn)) { _, _ ->
+                            memberLibrary.removeAll { it.id == member.id }
+                            // Also remove from any parties if needed, although mostly template based
+                            partyLibrary.forEach { it.members.removeAll { m -> m.id == member.id } }
+                            saveData()
+                            refreshActiveParties()
+                            onChanged?.invoke()
+                            dialog?.dismiss()
+                        }
+                        .setNegativeButton(getString(R.string.skip), null)
+                        .show()
+                }
+            }
+        }
+        titleLayout.addView(btnDel)
+
         dialogBinding.apply {
             etName.setText(member.name)
             cbIsPC.isChecked = member.isPC
@@ -393,7 +489,13 @@ class MainActivity : AppCompatActivity() {
             etHitDice.setOnClickListener {
                 val wasEmpty = member.hitDice.isBlank()
                 val oldHpCurrent = member.hpCurrent
-                SwipeDiceRollerDialogFragment.newInstance("Hit Dice", etHitDice.text.toString(), member.isPC) { diceStr ->
+                val editTitle = if (cbIsPC.isChecked) getString(R.string.edit_hp) else getString(R.string.edit_hd)
+                editHpDiceRolls(
+                    title = editTitle,
+                    initialValue = etHitDice.text.toString(),
+                    isPC = cbIsPC.isChecked,
+                    isHpOrHd = true
+                ) { diceStr ->
                     etHitDice.setText(diceStr)
                     member.hitDice = diceStr
                     if (wasEmpty && diceStr.isNotBlank()) {
@@ -405,49 +507,51 @@ class MainActivity : AppCompatActivity() {
                         
                         refreshActiveParties()
                         if (oldHpCurrent != rolledHp) {
-                            eventFragment?.addLog("${member.getDisplayName()} hpCurrent $oldHpCurrent -> $rolledHp")
+                            eventFragment?.addLog(getString(R.string.log_hp_change_simple, member.getDisplayName(), oldHpCurrent, rolledHp, "hpCurrent"))
                         }
                     }
-                }.show(supportFragmentManager, "swipe_dice_hitdice")
+                }
             }
             
             btnEditHpFull.text = member.hpFull.toString()
             btnEditHpFull.setOnClickListener {
                 member.hitDice = etHitDice.text.toString()
-                val oldHpCurrent = member.hpCurrent
                 HpModifierDialogFragment.newInstance(
                     member = member,
                     isFromEdit = true,
                     stayOpen = true,
                     onRollRequested = if (member.isPC) ({ m, s -> rollDamage(m, s) }) else null,
+                    onComplete = { m, start, end ->
+                        if (start != end) {
+                            eventFragment?.addLog(getString(R.string.log_hp_change_simple, m.getDisplayName(), start, end, "hpFull"))
+                        }
+                    },
                     onApplied = { updatedMember ->
                         btnEditHpFull.text = updatedMember.hpFull.toString()
                         btnEditHpCurrent.text = updatedMember.hpCurrent.toString()
                         member.hpFull = updatedMember.hpFull
                         member.hpCurrent = updatedMember.hpCurrent
                         refreshActiveParties()
-                        if (oldHpCurrent != updatedMember.hpCurrent) {
-                            eventFragment?.addLog("${member.getDisplayName()} hpCurrent $oldHpCurrent -> ${updatedMember.hpCurrent}")
-                        }
                     }
                 ).show(supportFragmentManager, "hp_modifier_edit_full")
             }
 
             btnEditHpCurrent.text = member.hpCurrent.toString()
             btnEditHpCurrent.setOnClickListener {
-                val oldHpCurrent = member.hpCurrent
                 HpModifierDialogFragment.newInstance(
                     member = member,
                     isFromEdit = false,
                     stayOpen = true,
                     onRollRequested = if (member.isPC) ({ m, s -> rollDamage(m, s) }) else null,
+                    onComplete = { m, start, end ->
+                        if (start != end) {
+                            eventFragment?.addLog(getString(R.string.log_hp_change_simple, m.getDisplayName(), start, end, "hpCurrent"))
+                        }
+                    },
                     onApplied = { updatedMember ->
                         btnEditHpCurrent.text = updatedMember.hpCurrent.toString()
                         member.hpCurrent = updatedMember.hpCurrent
                         refreshActiveParties()
-                        if (oldHpCurrent != updatedMember.hpCurrent) {
-                            eventFragment?.addLog("${member.getDisplayName()} hpCurrent $oldHpCurrent -> ${updatedMember.hpCurrent}")
-                        }
                     }
                 ).show(supportFragmentManager, "hp_modifier_edit_current")
             }
@@ -461,20 +565,15 @@ class MainActivity : AppCompatActivity() {
             etDamageRolls.setText(member.damageRolls)
             etDamageRolls.isFocusable = false
             etDamageRolls.setOnClickListener {
-                val wasEmpty = member.damageRolls.isBlank()
-                SwipeDiceRollerDialogFragment.newInstance("Damage Rolls", etDamageRolls.text.toString(), member.isPC) { diceStr ->
+                editHpDiceRolls(
+                    title = getString(R.string.damage_rolls),
+                    initialValue = etDamageRolls.text.toString(),
+                    isPC = cbIsPC.isChecked,
+                    isHpOrHd = false
+                ) { diceStr ->
                     etDamageRolls.setText(diceStr)
                     member.damageRolls = diceStr
-                    if (wasEmpty && member.hitDice.isNotBlank() && member.hpFull == 1 && member.hpCurrent == 1) {
-                        val rolledHp = DiceRoller.rollSegmentTotal(member.hitDice)
-                        member.hpFull = rolledHp
-                        member.hpCurrent = rolledHp
-                        btnEditHpFull.text = rolledHp.toString()
-                        btnEditHpCurrent.text = rolledHp.toString()
-                        refreshActiveParties()
-                        eventFragment?.addLog("${member.getDisplayName()} hpCurrent 1 -> $rolledHp")
-                    }
-                }.show(supportFragmentManager, "swipe_dice_damage")
+                }
             }
 
             etSpecialDetections.setText(member.specialDetections ?: "")
@@ -486,183 +585,344 @@ class MainActivity : AppCompatActivity() {
 
             updateVisibility(member.isPC)
             cbIsPC.setOnCheckedChangeListener { _, isChecked -> updateVisibility(isChecked) }
-        }
 
-        val builder = AlertDialog.Builder(this)
-            .setTitle(if (member.cloneTag != 0.toChar()) "Edit Clone" else if (fromLibrary) "Edit Library Member" else "Edit Member")
-            .setView(dialogBinding.root)
-            .setPositiveButton("Save") { _, _ ->
+            btnRemoveDelete.visibility = View.GONE
+
+            btnSaveMember.setOnClickListener {
                 member.apply {
-                    name = dialogBinding.etName.text.toString()
-                    isPC = dialogBinding.cbIsPC.isChecked
-                    classLevels = dialogBinding.etClassLevel.text.toString()
-                    hitDice = dialogBinding.etHitDice.text.toString()
-                    
-                    hpFull = dialogBinding.btnEditHpFull.text.toString().toIntOrNull() ?: hpFull
-                    hpCurrent = dialogBinding.btnEditHpCurrent.text.toString().toIntOrNull() ?: hpCurrent
-                    
-                    thac0 = dialogBinding.etThac0.text.toString().toIntOrNull() ?: thac0
-                    armorClass = dialogBinding.etArmorClass.text.toString().toIntOrNull() ?: armorClass
-                    damageRolls = dialogBinding.etDamageRolls.text.toString()
-                    specialDetections = dialogBinding.etSpecialDetections.text.toString()
-                    specialAttacks = dialogBinding.etSpecialAttacks.text.toString()
+                    name = etName.text.toString()
+                    isPC = cbIsPC.isChecked
+                    classLevels = etClassLevel.text.toString()
+                    hitDice = etHitDice.text.toString()
+                    hpFull = btnEditHpFull.text.toString().toIntOrNull() ?: hpFull
+                    hpCurrent = btnEditHpCurrent.text.toString().toIntOrNull() ?: hpCurrent
+                    thac0 = etThac0.text.toString().toIntOrNull() ?: thac0
+                    armorClass = etArmorClass.text.toString().toIntOrNull() ?: armorClass
+                    damageRolls = etDamageRolls.text.toString()
+                    specialDetections = etSpecialDetections.text.toString()
+                    specialAttacks = etSpecialAttacks.text.toString()
                 }
                 updateAllReferences(member)
                 memberLibrary.sortBy { it.name.lowercase() }
                 partyLibrary.forEach { it.members.sortBy { m -> m.name.lowercase() } }
                 refreshActiveParties()
                 onChanged?.invoke()
-            }
-            .setNeutralButton("Cancel", null)
-
-        if (fromParty != null) {
-            builder.setNegativeButton("Delete") { _, _ ->
-                fromParty.members.removeAll { it.id == member.id }
-                refreshActiveParties()
-                onChanged?.invoke()
-            }
-        } else if (fromLibrary) {
-            builder.setNegativeButton("Delete") { _, _ ->
-                memberLibrary.removeAll { it.id == member.id }
-                saveData()
-                refreshActiveParties()
-                onChanged?.invoke()
+                dialog?.dismiss()
             }
         }
 
-        builder.show()
+        val builder = AlertDialog.Builder(this)
+            .setCustomTitle(titleLayout)
+            .setView(dialogBinding.root)
+        
+        dialog = builder.create()
+        dialog.show()
     }
 
     /**
-     * Shows a dialog to edit party settings like name, active status, and priority.
+     * Unified dialog to create or edit a party.
      *
-     * @param party The party to edit.
-     * @param onComplete Callback invoked when editing is finished.
+     * @param party The party to edit, or a new empty party for creation.
+     * @param isNew True if this is a new party being created.
+     * @param onComplete Callback invoked when the user finishes and saves.
      */
-    private fun showPartyEditDialog(party: Party, onComplete: () -> Unit = {}) {
+    private fun editPartyDialog(party: Party, isNew: Boolean = false, onComplete: (() -> Unit)? = null) {
+        val dp = resources.displayMetrics.density
         val dialogView = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            val p = (16 * resources.displayMetrics.density).toInt()
+            val p = (16 * dp).toInt()
             setPadding(p, p, p, p)
         }
         
         val etName = EditText(this).apply {
             setText(party.name)
-            hint = "Party Name"
+            hint = getString(R.string.party_name_hint)
             setTextColor(Color.BLACK)
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_CAP_WORDS
+            maxLines = 1
+            imeOptions = EditorInfo.IME_ACTION_DONE
         }
         
         val cbActive = CheckBox(this).apply {
-            text = "Active"
-            isChecked = party.isActive
+            text = getString(R.string.active)
+            isChecked = if (isNew) true else party.isActive
             setTextColor(Color.BLACK)
+            isEnabled = party.name.isNotEmpty()
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
 
         val cbPriority = CheckBox(this).apply {
-            text = "Priority Party"
-            isChecked = party.isPriority
+            text = getString(R.string.priority_party)
+            isChecked = (party.id == dataManager.priorityPartyId)
             setTextColor(Color.BLACK)
+            isEnabled = party.name.isNotEmpty()
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+
+        val rowCheckboxes = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            addView(cbActive)
+            addView(cbPriority)
+        }
+
+        val membersContainer = GridLayout(this).apply {
+            columnCount = 2
+            alignmentMode = GridLayout.ALIGN_BOUNDS
+            useDefaultMargins = true
+            setPadding(8, 8, 8, 8)
+        }
+
+        val scrollMembers = ScrollView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                (200 * dp).toInt()
+            )
+            isVerticalScrollBarEnabled = true
+            isScrollbarFadingEnabled = false
+            addView(membersContainer)
+        }
+
+        fun refreshMembers() {
+            membersContainer.removeAllViews()
+            if (party.members.isEmpty()) {
+                membersContainer.addView(TextView(this).apply {
+                    text = getString(R.string.no_members)
+                    setTextColor(Color.GRAY)
+                })
+            } else {
+                party.members.forEach { member ->
+                    val row = LinearLayout(this).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        setPadding(4, 2, 4, 2)
+                        gravity = android.view.Gravity.CENTER_VERTICAL
+                        val params = GridLayout.LayoutParams()
+                        params.width = 0
+                        params.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+                        layoutParams = params
+                    }
+                    val btnRemove = Button(this, null, 0, android.R.style.Widget_Material_Button_Borderless).apply {
+                        text = "X"
+                        setTextColor(Color.RED)
+                        val size = (32 * dp).toInt()
+                        layoutParams = LinearLayout.LayoutParams(size, size)
+                        setPadding(0, 0, 0, 0)
+                        setOnClickListener {
+                            AlertDialog.Builder(this@MainActivity)
+                                .setTitle(getString(R.string.remove_member_title))
+                                .setMessage(getString(R.string.remove_member_msg, member.getDisplayName()))
+                                .setPositiveButton(getString(R.string.remove_btn)) { _, _ ->
+                                    party.members.remove(member)
+                                    refreshMembers()
+                                }
+                                .show()
+                        }
+                    }
+                    val nameView = TextView(this).apply {
+                        text = member.getDisplayName(full = false)
+                        setTextColor(Color.BLACK)
+                        textSize = 14f
+                        layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                    }
+                    row.addView(btnRemove)
+                    row.addView(nameView)
+                    membersContainer.addView(row)
+                }
+            }
+        }
+        refreshMembers()
+        
+        val btnAddFromLibrary = Button(this, null, 0, android.R.style.Widget_Material_Button_Small).apply {
+            text = getString(R.string.from_library)
+            isAllCaps = false
+            setPadding(0, 0, 0, 0)
+            isEnabled = party.name.isNotEmpty()
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            setOnClickListener {
+                showMemberLibraryManager(party) {
+                    refreshMembers()
+                }
+            }
         }
         
-        dialogView.addView(etName)
-        dialogView.addView(cbActive)
-        dialogView.addView(cbPriority)
-
-        val builder = AlertDialog.Builder(this)
-            .setTitle("Manage Party")
-            .setView(dialogView)
-            .setPositiveButton("Save") { _, _ ->
-                val newName = etName.text.toString().trim()
-                if (newName.isNotEmpty()) {
-                    party.name = newName
-                    party.isActive = cbActive.isChecked
-                    val wasPriority = party.isPriority
-                    party.isPriority = cbPriority.isChecked
-                    
-                    if (party.isPriority && !wasPriority) {
-                        partyLibrary.forEach { if (it.id != party.id) it.isPriority = false }
-                    }
-                    
-                    sortPartyLibrary(partyLibrary)
-                    refreshActiveParties()
-                    onComplete()
-                }
-            }
-            .setNeutralButton("Copy") { _, _ ->
-                showCopyPartyDialog(party, onComplete)
-            }
-            .setNegativeButton("Cancel", null)
-
-        val dialog = builder.create()
-        dialog.show()
-
-        val btnDelete = TextView(this).apply {
-            text = "DELETE FROM LIBRARY"
-            setTextColor(Color.RED)
-            gravity = android.view.Gravity.CENTER
-            setPadding(0, 48, 0, 0)
+        val btnCreateNewMember = Button(this, null, 0, android.R.style.Widget_Material_Button_Small).apply {
+            text = getString(R.string.create)
+            isAllCaps = false
+            setPadding(0, 0, 0, 0)
+            isEnabled = party.name.isNotEmpty()
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             setOnClickListener {
-                AlertDialog.Builder(this@MainActivity)
-                    .setTitle("PERMANENT DELETE")
-                    .setMessage("Delete '${party.name}' forever?")
-                    .setPositiveButton("DELETE") { _, _ ->
-                        partyLibrary.removeAll { it.id == party.id }
-                        activeParties.removeAll { it.id == party.id }
-                        sortPartyLibrary(partyLibrary)
-                        refreshActiveParties()
-                        onComplete()
-                        dialog.dismiss()
-                    }
-                    .setNegativeButton("Cancel", null)
-                    .show()
+                createNewMember(party) {
+                    refreshMembers()
+                }
             }
         }
-        dialogView.addView(btnDelete)
-    }
 
-    /**
-     * Shows a dialog to create a copy of an existing party.
-     */
-    private fun showCopyPartyDialog(party: Party, onComplete: () -> Unit = {}) {
-        val input = EditText(this)
-        input.setText("${party.name} (Copy)")
-        input.setTextColor(Color.BLACK)
-        AlertDialog.Builder(this)
-            .setTitle("Copy Party")
-            .setView(input)
-            .setPositiveButton("Copy") { _, _ ->
-                val newName = input.text.toString().trim()
-                if (newName.isNotEmpty()) {
-                    val copiedParty = party.copy(
-                        id = UUID.randomUUID(),
-                        name = newName,
-                        members = party.members.map { it.clone() }.toMutableList(),
-                        isActive = false,
-                        isPriority = false
-                    )
-                    partyLibrary.add(copiedParty)
-                    sortPartyLibrary(partyLibrary)
-                    refreshActiveParties()
-                    onComplete()
-                    Toast.makeText(this, "Party copied as '${newName}'", Toast.LENGTH_SHORT).show()
+        val rowMemberButtons = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            val tvLabel = TextView(this@MainActivity).apply {
+                text = getString(R.string.member_label)
+                setTextColor(Color.BLACK)
+                setPadding(0, 0, 8, 0)
+            }
+            addView(tvLabel)
+            addView(btnAddFromLibrary)
+            addView(btnCreateNewMember)
+        }
+
+        val btnResetAllHp = Button(this).apply {
+            text = getString(R.string.reset_all_hp)
+            isEnabled = party.name.isNotEmpty()
+            setOnClickListener {
+                party.members.forEach { it.hpCurrent = it.hpFull }
+                refreshActiveParties()
+                Toast.makeText(this@MainActivity, getString(R.string.all_hp_reset_toast), Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        val updateEnabledStates = { hasName: Boolean ->
+            cbActive.isEnabled = hasName
+            cbPriority.isEnabled = hasName
+            btnAddFromLibrary.isEnabled = hasName
+            btnCreateNewMember.isEnabled = hasName
+            btnResetAllHp.isEnabled = hasName
+            if (hasName && isNew && !cbActive.isChecked) cbActive.isChecked = true
+        }
+
+        dialogView.addView(etName)
+        dialogView.addView(rowCheckboxes)
+        dialogView.addView(rowMemberButtons)
+        dialogView.addView(btnResetAllHp)
+        dialogView.addView(scrollMembers)
+
+        val titleLayout = RelativeLayout(this).apply {
+            val p = (16 * dp).toInt()
+            setPadding(p, p, p, 0)
+        }
+        val tvTitle = TextView(this).apply {
+            text = if (isNew) getString(R.string.create_new_party) else getString(R.string.manage_party)
+            setTextColor(Color.BLACK)
+            textSize = 20f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        titleLayout.addView(tvTitle)
+
+        var dialog: AlertDialog? = null
+
+        if (!isNew) {
+            val btnDel = TextView(this).apply {
+                text = "DEL"
+                setTextColor(Color.RED)
+                textSize = 16f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                setPadding((16 * dp).toInt(), 0, 0, 0)
+                layoutParams = RelativeLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    addRule(RelativeLayout.ALIGN_PARENT_END)
+                    addRule(RelativeLayout.CENTER_VERTICAL)
+                }
+                setOnClickListener {
+                    AlertDialog.Builder(this@MainActivity)
+                        .setTitle(getString(R.string.permanent_delete_title))
+                        .setMessage(getString(R.string.permanent_delete_msg, party.name))
+                        .setPositiveButton(getString(R.string.delete_btn)) { _, _ ->
+                            if (party.id == dataManager.priorityPartyId) {
+                                dataManager.priorityPartyId = null
+                            }
+                            partyLibrary.removeAll { it.id == party.id }
+                            activeParties.removeAll { it.id == party.id }
+                            sortPartyLibrary(partyLibrary)
+                            refreshActiveParties()
+                            onComplete?.invoke()
+                            dialog?.dismiss()
+                        }
+                        .setNegativeButton(getString(R.string.skip), null)
+                        .show()
                 }
             }
-            .setNegativeButton("Cancel", null)
-            .show()
+            titleLayout.addView(btnDel)
+        }
+
+        val builder = AlertDialog.Builder(this)
+            .setCustomTitle(titleLayout)
+            .setView(dialogView)
+            .setPositiveButton(getString(R.string.ok), null)
+
+        dialog = builder.create()
+        dialog.show()
+
+        val okButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+
+        val syncOkButton = {
+            val currentText = etName.text.toString().trim()
+            if (currentText.isEmpty()) {
+                okButton.isEnabled = false
+                okButton.text = getString(R.string.ok)
+            } else {
+                val isDuplicate = partyLibrary.any { it.id != party.id && it.name.equals(currentText, ignoreCase = true) }
+                if (isDuplicate) {
+                    okButton.isEnabled = false
+                    okButton.text = getString(R.string.dupe)
+                } else {
+                    okButton.isEnabled = true
+                    okButton.text = getString(R.string.ok)
+                }
+            }
+        }
+        syncOkButton()
+
+        okButton.setOnClickListener {
+            val newName = etName.text.toString().trim()
+            party.name = newName
+            party.isActive = cbActive.isChecked
+            if (cbPriority.isChecked) {
+                dataManager.priorityPartyId = party.id
+            } else if (party.id == dataManager.priorityPartyId) {
+                dataManager.priorityPartyId = null
+            }
+            if (isNew) {
+                partyLibrary.add(party)
+            }
+            sortPartyLibrary(partyLibrary)
+            refreshActiveParties()
+            onComplete?.invoke()
+            dialog.dismiss()
+        }
+
+        etName.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                val hasName = s?.toString()?.trim()?.isNotEmpty() == true
+                updateEnabledStates(hasName)
+                syncOkButton()
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
     }
+
+
 
     /**
      * Shows the app settings dialog, allowing import/export and master reset.
      */
     private fun showSettingsDialog() {
+        var versionTapCount = 0
         val titleView = TextView(this).apply {
-            text = "Cohortis\nversion ${BuildConfig.VERSION_NAME}\nbuild ${BuildConfig.BUILD_TIME}"
+            text = getString(R.string.settings_version_info, BuildConfig.VERSION_NAME, BuildConfig.BUILD_TIME)
             setPadding(60, 40, 60, 0)
             textSize = 14f
             setTextColor(0xFF555555.toInt())
+            setOnClickListener {
+                versionTapCount++
+                if (versionTapCount >= 3) {
+                    performMasterReset()
+                }
+            }
         }
         
-        val options = arrayOf("Import JSON Library", "Export JSON Library", "MASTER RESET")
+        val options = arrayOf(getString(R.string.import_json_library), getString(R.string.export_json_library))
         AlertDialog.Builder(this)
             .setCustomTitle(titleView)
             .setItems(options) { _, which ->
@@ -673,30 +933,23 @@ class MainActivity : AppCompatActivity() {
                         val fileName = "Cohortis_Library_${sdf.format(Date())}.json"
                         exportLauncher.launch(fileName)
                     }
-                    2 -> showMasterResetConfirm()
                 }
             }
             .show()
     }
 
     /**
-     * Shows a confirmation dialog for a "Master Reset" which wipes all data.
+     * Performs a "Master Reset" which wipes all data.
      */
-    private fun showMasterResetConfirm() {
-        AlertDialog.Builder(this)
-            .setTitle("MASTER RESET")
-            .setMessage("This will DELETE ALL DATA (Parties, Members, Rounds). This cannot be undone.")
-            .setPositiveButton("RESET EVERYTHING") { _, _ ->
-                dataManager.clearAll()
-                loadData()
-                currentRound = 0
-                refreshActiveParties()
-                binding.content.tvRoundNumber.text = "0"
-                eventFragment?.addLog("SYSTEM RESET COMPLETE")
-                Toast.makeText(this, "All data cleared", Toast.LENGTH_SHORT).show()
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
+    private fun performMasterReset() {
+        dataManager.clearAll()
+        loadData()
+        currentRound = 0
+        refreshActiveParties()
+        binding.content.tvRoundNumber.text = "0"
+        eventFragment?.clearLog()
+        eventFragment?.addLog(getString(R.string.system_reset_complete))
+        Toast.makeText(this, getString(R.string.master_reset_complete), Toast.LENGTH_SHORT).show()
     }
 
     /**
@@ -716,13 +969,18 @@ class MainActivity : AppCompatActivity() {
                 processImportQueue(membersQueue, importedParties ?: emptyList(), 0, 0)
             }
         } catch (e: Exception) {
-            Toast.makeText(this, "Import failed: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.import_failed, e.message), Toast.LENGTH_LONG).show()
             e.printStackTrace()
         }
     }
 
     /**
      * Recursively processes the queue of members to be imported, handling conflicts.
+     *
+     * @param membersQueue Queue of members left to import.
+     * @param partiesToImport List of parties to import.
+     * @param membersAdded Counter for members added.
+     * @param partiesAdded Counter for parties added.
      */
     private fun processImportQueue(
         membersQueue: MutableList<Member>,
@@ -737,8 +995,7 @@ class MainActivity : AppCompatActivity() {
                     val partyWithNewIds = imported.copy(
                         id = UUID.randomUUID(),
                         members = imported.members.map { it.copy(id = UUID.randomUUID()) }.toMutableList(),
-                        isActive = false,
-                        isPriority = false
+                        isActive = false
                     )
                     partyLibrary.add(partyWithNewIds)
                     finalPartiesAdded++
@@ -748,7 +1005,7 @@ class MainActivity : AppCompatActivity() {
             saveData()
             loadData()
             refreshActiveParties()
-            Toast.makeText(this, "Imported $membersAdded members and $finalPartiesAdded parties", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.imported_summary, membersAdded, finalPartiesAdded), Toast.LENGTH_LONG).show()
             return
         }
 
@@ -767,17 +1024,17 @@ class MainActivity : AppCompatActivity() {
                 processImportQueue(membersQueue, partiesToImport, membersAdded, partiesAdded)
             } else {
                 AlertDialog.Builder(this)
-                    .setTitle("Import Conflict")
-                    .setMessage("Member '${imported.name}' (ID: ${imported.id}) has different data than the existing record. Overwrite?")
-                    .setPositiveButton("Overwrite") { _, _ ->
+                    .setTitle(getString(R.string.import_conflict))
+                    .setMessage(getString(R.string.import_conflict_msg, imported.name, imported.id))
+                    .setPositiveButton(getString(R.string.overwrite)) { _, _ ->
                         val index = memberLibrary.indexOf(existing)
                         if (index != -1) memberLibrary[index] = imported
                         processImportQueue(membersQueue, partiesToImport, membersAdded + 1, partiesAdded)
                     }
-                    .setNegativeButton("Skip") { _, _ ->
+                    .setNegativeButton(getString(R.string.skip)) { _, _ ->
                         processImportQueue(membersQueue, partiesToImport, membersAdded, partiesAdded)
                     }
-                    .setNeutralButton("Import as New") { _, _ ->
+                    .setNeutralButton(getString(R.string.import_as_new)) { _, _ ->
                         memberLibrary.add(imported.copy(id = UUID.randomUUID()))
                         processImportQueue(membersQueue, partiesToImport, membersAdded + 1, partiesAdded)
                     }
@@ -800,10 +1057,10 @@ class MainActivity : AppCompatActivity() {
                 val gson = GsonBuilder().setPrettyPrinting().create()
                 val json = gson.toJson(exportData)
                 outputStream.write(json.toByteArray())
-                Toast.makeText(this, "Library exported successfully", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.library_exported_success), Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
-            Toast.makeText(this, "Export failed: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.export_failed, e.message), Toast.LENGTH_LONG).show()
             e.printStackTrace()
         }
     }
@@ -815,14 +1072,20 @@ class MainActivity : AppCompatActivity() {
      * @param targetParty If provided, selecting a member adds it to this party.
      * @param onDismiss Callback invoked when the library dialog is closed.
      */
+    @SuppressLint("ClickableViewAccessibility")
     private fun showMemberLibraryManager(targetParty: Party? = null, onDismiss: (() -> Unit)? = null) {
         val dialog = Dialog(this, android.R.style.Theme_Material_Light_NoActionBar_Fullscreen)
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
         val libBinding = DialogLibraryBinding.inflate(layoutInflater)
         dialog.setContentView(libBinding.root)
 
-        libBinding.tvLibraryTitle.text = "Member Library"
-        libBinding.btnCreate.text = "Create Member"
+        if (targetParty != null) {
+            libBinding.tvLibraryTitle.text = getString(R.string.member_library_from, targetParty.name.ifEmpty { getString(R.string.new_party) })
+        } else {
+            libBinding.tvLibraryTitle.text = getString(R.string.member_library)
+        }
+        
+        libBinding.btnCreate.text = getString(R.string.create_member)
         libBinding.llCloneContainer.visibility = if (targetParty != null) View.VISIBLE else View.GONE
 
         libBinding.npCloneCount.apply {
@@ -855,13 +1118,13 @@ class MainActivity : AppCompatActivity() {
                 if (pos != -1) {
                     val member = memberLibrary[pos]
                     showEditMemberDialog(member, fromLibrary = true, onChanged = {
-                        libBinding.lvItems.adapter = ArrayAdapter<String>(this@MainActivity, android.R.layout.simple_list_item_1, memberLibrary.map { it.name })
+                        libBinding.lvItems.adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_list_item_1, memberLibrary.map { it.name })
                     })
                 }
             }
         })
 
-        libBinding.lvItems.setOnTouchListener { v, event -> 
+        libBinding.lvItems.setOnTouchListener { v, event ->
             val handled = detector.onTouchEvent(event)
             if (handled && event.action == MotionEvent.ACTION_UP) {
                 v.performClick()
@@ -871,17 +1134,23 @@ class MainActivity : AppCompatActivity() {
 
         libBinding.btnCreate.setOnClickListener {
             createNewMember {
-                libBinding.lvItems.adapter = ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, memberLibrary.map { it.name })
+                libBinding.lvItems.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, memberLibrary.map { it.name })
             }
         }
 
-        dialog.setOnDismissListener { onDismiss?.invoke() }
+        dialog.setOnDismissListener {
+            onDismiss?.invoke()
+        }
         dialog.show()
     }
 
     /**
      * Adds multiple unique clones of a member template to a party.
      * Clones are tagged with a unique character (a-z, 0-9).
+     *
+     * @param template Member template to clone.
+     * @param targetParty Party to receive the clones.
+     * @param count Number of clones to add.
      */
     private fun addClonesToParty(template: Member, targetParty: Party, count: Int) {
         val tags = ('a'..'z').toList() + ('0'..'9').toList()
@@ -902,33 +1171,44 @@ class MainActivity : AppCompatActivity() {
         if (addedCount > 0) {
             targetParty.members.sortBy { it.name.lowercase() }
             refreshActiveParties()
-            Toast.makeText(this, "Added $addedCount clones of ${template.name}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.added_clones, addedCount, template.name), Toast.LENGTH_SHORT).show()
         }
     }
 
     /**
      * Adds a reference to an existing library member to a target party.
+     *
+     * @param member Library member to add.
+     * @param targetParty Target party.
      */
     private fun addMemberByReference(member: Member, targetParty: Party) {
         if (targetParty.members.any { it.id == member.id }) {
-            Toast.makeText(this, "${member.name} is already in this party", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.already_in_party, member.name), Toast.LENGTH_SHORT).show()
             return
         }
         targetParty.members.add(member)
         targetParty.members.sortBy { it.name.lowercase() }
         refreshActiveParties()
-        Toast.makeText(this, "Added ${member.name}", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, getString(R.string.added_member, member.name), Toast.LENGTH_SHORT).show()
     }
 
     /**
      * Creates a new blank member in the global library and opens the edit dialog.
+     *
+     * @param targetParty Optional party to add the new member to.
+     * @param onChanged Callback invoked after changes are saved.
      */
-    private fun createNewMember(onChanged: (() -> Unit)? = null) {
+    private fun createNewMember(targetParty: Party? = null, onChanged: (() -> Unit)? = null) {
         val newMember = Member(name = "", classLevels = "")
         memberLibrary.add(newMember)
+        when {
+            targetParty != null -> {
+                targetParty.members.add(newMember)
+            }
+        }
         saveData()
         refreshActiveParties()
-        showEditMemberDialog(newMember, fromLibrary = true, onChanged = onChanged)
+        showEditMemberDialog(newMember, fromParty = targetParty, fromLibrary = targetParty == null, onChanged = onChanged)
     }
 
     /**
@@ -939,9 +1219,10 @@ class MainActivity : AppCompatActivity() {
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
         val libBinding = DialogLibraryBinding.inflate(layoutInflater)
         dialog.setContentView(libBinding.root)
-        libBinding.tvLibraryTitle.text = "Party Library"
-        libBinding.btnCreate.text = "Create Party"
+        libBinding.tvLibraryTitle.text = getString(R.string.party_library)
+        libBinding.btnCreate.text = getString(R.string.create_party)
         val adapter = object : ArrayAdapter<Party>(this, R.layout.item_party_library, partyLibrary) {
+            @SuppressLint("ClickableViewAccessibility")
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.item_party_library, parent, false)
                 val party = getItem(position)!!
@@ -964,7 +1245,7 @@ class MainActivity : AppCompatActivity() {
                     if (!handled && event.action == MotionEvent.ACTION_UP) { v.performClick() }
                     true
                 }
-                tvName.setOnClickListener { showPartyEditDialog(party) { notifyDataSetChanged() } }
+                tvName.setOnClickListener { editPartyDialog(party) { notifyDataSetChanged() } }
                 view.setOnTouchListener(null)
                 view.setOnClickListener(null)
                 tvName.setOnLongClickListener(null)
@@ -972,86 +1253,12 @@ class MainActivity : AppCompatActivity() {
             }
         }
         libBinding.lvItems.adapter = adapter
-        libBinding.btnCreate.setOnClickListener { createNewParty { adapter.notifyDataSetChanged() } }
+        libBinding.btnCreate.setOnClickListener { 
+            val tempParty = Party(id = UUID.randomUUID(), name = "", isActive = true)
+            editPartyDialog(tempParty, isNew = true) {
+                adapter.notifyDataSetChanged() 
+            }
+        }
         dialog.show()
-    }
-
-    /**
-     * Shows a dialog to create a new party from scratch.
-     */
-    private fun createNewParty(onAdded: (() -> Unit)? = null) {
-        val tempParty = Party(id = UUID.randomUUID(), name = "", isActive = true, isPriority = false)
-        val dialogView = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            val p = (16 * resources.displayMetrics.density).toInt()
-            setPadding(p, p, p, p)
-        }
-        val etName = EditText(this).apply { 
-            hint = "Party Name" 
-            setTextColor(Color.BLACK)
-        }
-        
-        val cbActive = CheckBox(this).apply {
-            text = "Active"
-            isChecked = true
-            setTextColor(Color.BLACK)
-        }
-
-        val cbPriority = CheckBox(this).apply {
-            text = "Priority Party"
-            isChecked = false
-            setTextColor(Color.BLACK)
-        }
-
-        val tvMemberCount = TextView(this).apply {
-            text = "Members: 0"
-            setPadding(16, 0, 0, 0)
-            setTextColor(Color.BLACK)
-        }
-        val btnAddMembers = ImageButton(this).apply {
-            setImageResource(android.R.drawable.ic_input_add)
-            background = ContextCompat.getDrawable(context, android.R.drawable.btn_default)
-            layoutParams = LinearLayout.LayoutParams((48 * resources.displayMetrics.density).toInt(), (48 * resources.displayMetrics.density).toInt())
-            setOnClickListener {
-                showMemberLibraryManager(tempParty) {
-                    tvMemberCount.text = "Members: ${tempParty.members.size}"
-                }
-            }
-        }
-        val memberRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = android.view.Gravity.CENTER_VERTICAL
-            addView(btnAddMembers)
-            addView(tvMemberCount)
-        }
-        dialogView.addView(etName)
-        dialogView.addView(cbActive)
-        dialogView.addView(cbPriority)
-        dialogView.addView(memberRow)
-
-        AlertDialog.Builder(this)
-            .setTitle("Create New Party")
-            .setView(dialogView)
-            .setPositiveButton("Create") { _, _ ->
-                val name = etName.text.toString().trim()
-                if (name.isNotEmpty()) {
-                    tempParty.name = name
-                    tempParty.isActive = cbActive.isChecked
-                    tempParty.isPriority = cbPriority.isChecked
-                    
-                    if (tempParty.isPriority) {
-                        partyLibrary.forEach { it.isPriority = false }
-                    }
-
-                    partyLibrary.add(tempParty)
-                    sortPartyLibrary(partyLibrary)
-                    refreshActiveParties()
-                    onAdded?.invoke()
-                } else {
-                    Toast.makeText(this, "Name cannot be empty", Toast.LENGTH_SHORT).show()
-                }
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
     }
 }

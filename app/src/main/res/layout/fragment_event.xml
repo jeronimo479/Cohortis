@@ -12,7 +12,6 @@
         android:layout_height="wrap_content"
         android:ellipsize="end"
         android:maxLines="1"
-        android:text="Welcome to Cohortis"
         android:textColor="#00FF00"
         android:textSize="14sp" />
 
@@ -22,7 +21,24 @@
         android:layout_height="wrap_content"
         android:ellipsize="end"
         android:maxLines="1"
-        android:text="Ready for encounter..."
+        android:textColor="#00FF00"
+        android:textSize="14sp" />
+
+    <TextView
+        android:id="@+id/tvLog3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="#00FF00"
+        android:textSize="14sp" />
+
+    <TextView
+        android:id="@+id/tvLog4"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:maxLines="1"
         android:textColor="#00FF00"
         android:textSize="14sp" />
 </LinearLayout>

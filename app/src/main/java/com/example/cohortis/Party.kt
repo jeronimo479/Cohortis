@@ -10,12 +10,10 @@ import java.util.UUID
  * @property name The name of the party (e.g., "The Brave Ones").
  * @property members A mutable list of [Member] objects belonging to this party.
  * @property isActive Whether this party is currently shown in the active view.
- * @property isPriority If true, this party is sorted to the top of the list.
  */
 data class Party(
     val id: UUID = UUID.randomUUID(),
     var name: String = "",
     val members: MutableList<Member> = mutableListOf(),
-    var isActive: Boolean = false,
-    var isPriority: Boolean = false
+    var isActive: Boolean = false
 )

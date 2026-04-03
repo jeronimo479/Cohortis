@@ -57,9 +57,20 @@ import kotlin.random.Random
  * If you change rules here, you are changing the rules of the app.
  */
 
+/** Relationships:
+
+DiceExpression
+ +-- List<DiceGroup>
+        +-- List<DiceSegment>
+               +-- repeat (N)
+               +-- DiceRoll
+                     +-- diceCount (X)
+                     +-- sides (Y)
+                     +-- modifier (Z)
+*/
 
 /* ============================================================
- * DiceRoll — XdY ± Z
+ * DiceRoll,  XdY +/- Z
  * ============================================================
  *
  * Represents a single mechanical dice roll:
@@ -92,14 +103,14 @@ data class DiceRoll(
     }
 
     /**
-     * Display form with minimization rules applied.
+     * Formatted with minimization rules applied.
      *
      * Examples:
      *   1d8      -> "d8"
      *   2d6+1    -> "2d6+1"
      *   1d4+0    -> "d4"
      */
-    fun toDisplayString(): String {
+    fun toShortString(): String {
         val xPart = if (diceCount == 1) "" else diceCount.toString()
         val zPart = when {
             modifier > 0 -> "+$modifier"
@@ -110,16 +121,15 @@ data class DiceRoll(
     }
 
     /**
-     * Canonical, fully explicit form.
+     * Long, fully explicit form.
      *
      * Used internally and for edit-mode expansion.
      * Minimization rules DO NOT apply here.
      */
-    fun toCanonicalString(): String {
+    fun toLongString(): String {
         val zPart = when {
-            modifier > 0 -> "+$modifier"
+            modifier >= 0 -> "+$modifier"
             modifier < 0 -> modifier.toString()
-            else -> ""
         }
         return "${diceCount}d$sides$zPart"
     }
@@ -147,8 +157,7 @@ data class DiceSegment(
 
     /**
      * Check for valid segments
-     */
-    
+     */    
     fun isValid(): Boolean =
         repeat > 0 && roll.isValid()
 
@@ -159,20 +168,20 @@ data class DiceSegment(
         (1..repeat).sumOf { roll.rollOnce() }
 
     /**
-     * Display string with minimization rules:
+     * Formatted with minimization rules applied.
      * - Suppress "Nx" when N == 1
      */
-    fun toDisplayString(): String {
+    fun toShortString(): String {
         val nPart = if (repeat == 1) "" else "${repeat}x "
-        return nPart + roll.toDisplayString()
+        return nPart + roll.toShortString()
     }
 
     /**
-     * Edit-mode string:
+     * Long, fully explicit form.
      * - Always fully expanded (N, X, Y, Z visible)
      */
-    fun toEditString(): String =
-        "${repeat}x ${roll.toCanonicalString()}"
+    fun toLongString(): String =
+        "${repeat}x ${roll.toLongString()}"
 }
 
 
@@ -205,16 +214,16 @@ data class DiceGroup(
         segments.sumOf { it.rollTotal() }
 
     /**
-     * Display form using commas.
+     * Formatted with minimization rules applied.
      */
-    fun toDisplayString(): String =
-        segments.joinToString(", ") { it.toDisplayString() }
+    fun toShortString(): String =
+        segments.joinToString(",") { it.toShortString() }
 
     /**
-     * Edit form with all segments expanded.
+     * Long, fully explicit form.
      */
-    fun toEditString(): String =
-        segments.joinToString(", ") { it.toEditString() }
+    fun toLongString(): String =
+        segments.joinToString(", ") { it.toLongString() }
 }
 
 
@@ -243,18 +252,18 @@ data class DiceExpression(
         groups.sumOf { it.rollTotal() }
 
     /**
-     * Display string (minimized).
+     * Formatted with minimization rules applied.
      */
-    fun toDisplayString(): String =
-        groups.joinToString(" | ") { it.toDisplayString() }
+    fun toShortString(): String =
+        groups.joinToString("|") { it.toShortString() }
 
     /**
-     * Edit string (fully expanded).
+     * Long, fully explicit form.
      */
-    fun toEditString(): String =
-        groups.joinToString(" | ") { it.toEditString() }
+    fun toLongString(): String =
+        groups.joinToString(" | ") { it.toLongString() }
 
-    override fun toString(): String = toDisplayString()
+    override fun toString(): String = toShortString()
 
     companion object {
 

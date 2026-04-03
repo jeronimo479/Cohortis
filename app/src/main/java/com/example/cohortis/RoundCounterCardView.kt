@@ -14,14 +14,12 @@ class RoundCounterCardView @JvmOverloads constructor(
     defStyleAttr: Int = com.google.android.material.R.attr.materialCardViewStyle
 ) : MaterialCardView(context, attrs, defStyleAttr) {
 
+    
     override fun performClick(): Boolean {
-        // This ensures that any OnClickListener or accessibility event is triggered.
-        return if (super.performClick()) {
-            true
-        } else {
-            // Even if no listener is set, we return true to indicate the click was handled
-            // as part of our custom gesture logic.
-            true
-        }
+        // Call super so accessibility services and any OnClickListener are notified.
+        super.performClick()
+        // We handle clicks via gestures/touch, so report the click as handled.
+        return true
     }
+
 }

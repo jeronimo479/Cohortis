@@ -17,19 +17,22 @@
         android:paddingHorizontal="4dp"
         android:gravity="center_vertical">
 
-        <!-- Column 1: Name (Minimized weight to allow Damage to spread) -->
+        <!-- Column 1: Name (Dynamic width with constraints for ~9 characters) -->
         <TextView
             android:id="@+id/tvName"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1.0"
+            android:minWidth="60dp"
+            android:maxWidth="100dp"
             android:ellipsize="end"
             android:maxLines="1"
             android:text="Name"
             android:textSize="11sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:paddingStart="0dp"
+            android:paddingEnd="4dp" />
 
-        <!-- Column 2: Damage Rolls (Now a container to distribute segments equally) -->
+        <!-- Column 2: Damage Rolls (Takes the lion's share of remaining space) -->
         <LinearLayout
             android:id="@+id/llDamageContainer"
             android:layout_width="0dp"

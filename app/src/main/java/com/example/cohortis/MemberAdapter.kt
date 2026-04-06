@@ -46,7 +46,8 @@ class MemberAdapter(
     override fun onBindViewHolder(holder: MemberViewHolder, position: Int) {
         val member = members[position]
         holder.binding.apply {
-            val displayName = member.getDisplayName()
+            // Get the display name (first word)
+            val displayName = member.getDisplayName(full = false)
             tvName.text = displayName
             
             // Fade name if dead (HP <= 0)

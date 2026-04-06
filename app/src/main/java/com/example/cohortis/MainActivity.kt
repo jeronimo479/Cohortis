@@ -588,9 +588,35 @@ class MainActivity : AppCompatActivity() {
 
             btnRemoveDelete.visibility = View.GONE
 
+            val syncSaveButton = {
+                val currentText = etName.text.toString().trim()
+                if (currentText.isEmpty()) {
+                    btnSaveMember.isEnabled = false
+                    btnSaveMember.text = getString(R.string.ok)
+                } else {
+                    val isDuplicate = memberLibrary.any { it.id != member.id && it.name.equals(currentText, ignoreCase = true) }
+                    if (isDuplicate) {
+                        btnSaveMember.isEnabled = false
+                        btnSaveMember.text = getString(R.string.dupe)
+                    } else {
+                        btnSaveMember.isEnabled = true
+                        btnSaveMember.text = getString(R.string.ok)
+                    }
+                }
+            }
+
+            etName.addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                    syncSaveButton()
+                }
+                override fun afterTextChanged(s: Editable?) {}
+            })
+            syncSaveButton()
+
             btnSaveMember.setOnClickListener {
                 member.apply {
-                    name = etName.text.toString()
+                    name = etName.text.toString().trim()
                     isPC = cbIsPC.isChecked
                     classLevels = etClassLevel.text.toString()
                     hitDice = etHitDice.text.toString()

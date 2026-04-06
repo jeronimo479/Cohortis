@@ -1,0 +1,46 @@
+{
+  "members": [
+    {
+      "id": "9e0e3c6a-8a6e-4e21-b7d5-2038e4c01c10",
+      "name": "Goblin",
+      "isPC": false,
+      "classLevels": "",
+      "thac0": 20,
+      "armorClass": 6,
+      "hitDice": "1d8",
+      "hpFull": 5,
+      "hpCurrent": 5,
+      "damageRolls": "d6",
+      "specialDetections": null,
+      "specialAttacks": null,
+      "cloneTag": "\u0000",
+      "lastToHitRoll": 0
+    }
+  ],
+  "parties": [
+    {
+      "id": "8ccdcdb0-3e6c-4a92-a9e1-9f2d620c0044",
+      "name": "Goblin Ambush",
+      "isActive": false,
+      "members": [
+        {
+          "id": "1b76dc85-4506-4735-855f-f49c92b40a9a",
+          "name": "Goblin",
+          "isPC": false,
+          "classLevels": "",
+          "thac0": 20,
+          "armorClass": 6,
+          "hitDice": "1d8",
+          "hpFull": 5,
+          "hpCurrent": 5,
+          "damageRolls": "d6",
+          "specialDetections": null,
+          "specialAttacks": null,
+          "cloneTag": "a",
+          "lastToHitRoll": 0
+        }
+      ]
+    }
+  ]
+}
+``

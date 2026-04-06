@@ -1,0 +1,26 @@
+Create a new encounter JSON file for Cohortis app.
+Each member should be uniquely specified in member library of JSON.
+Each party should represent one encounter from the module, "The Lost Tomb of the Dwarven Prince".
+All monsters should conform to AD&D 2E rules.
+The id from each member should follow UUID rules.
+Ignore the member field "lastToHitRoll"
+
+
+Create a party and populate all membes for each of these:
+5xGoblins & Goblin Boss
+1 Ogre (Leappaloode)
+2 Giant Wolf Spider
+1 Owlbear (wounded)
+3 Stirges
+Swarm of Bats
+1 Skeleton (dwarven)
+2 Skeleton (dwarven)
+4 Skeleton (dwarven)
+8 Skeleton (dwarven)
+16 Skeleton (dwarven)
+32 Skeleton (dwarven)
+4 Dwarven Skeleton Captains
+Good mummy of Dwarven Prince
+Gelatinous Cube (dead, environmental)
+Goblin Cleric of Maglubiyet and her goblin retinue (determin count from module Lost Tomb..)
+

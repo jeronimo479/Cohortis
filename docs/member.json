@@ -1,0 +1,16 @@
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "name": "Member Name",
+  "isPC": false,
+  "classLevels": "",
+  "thac0": 20,
+  "armorClass": 10,
+  "hitDice": "",
+  "hpFull": 0,
+  "hpCurrent": 0,
+  "damageRolls": "",
+  "specialDetections": null,
+  "specialAttacks": null,
+  "cloneTag": "\u0000",
+  "lastToHitRoll": 0
+}

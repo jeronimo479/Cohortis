@@ -130,6 +130,7 @@ data class DiceRoll(
         val zPart = when {
             modifier >= 0 -> "+$modifier"
             modifier < 0 -> modifier.toString()
+            else -> ""
         }
         return "${diceCount}d$sides$zPart"
     }

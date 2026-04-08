@@ -10,16 +10,16 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingTop="48dp"
+        android:paddingTop="16dp"
         android:paddingHorizontal="16dp"
-        android:paddingBottom="16dp">
+        android:paddingBottom="8dp">
 
         <TextView
             android:id="@+id/tvLibraryTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Library"
-            android:textSize="20sp"
+            android:textSize="18sp"
             android:textStyle="bold" />
     </LinearLayout>
 
@@ -28,8 +28,8 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:divider="@null"
-        android:dividerHeight="0dp" />
+        android:divider="@android:drawable/divider_horizontal_bright"
+        android:dividerHeight="1dp" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -37,7 +37,7 @@
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:paddingHorizontal="16dp"
-        android:paddingBottom="48dp"
+        android:paddingBottom="16dp"
         android:paddingTop="8dp">
 
         <Button
@@ -64,7 +64,7 @@
             <NumberPicker
                 android:id="@+id/npCloneCount"
                 android:layout_width="wrap_content"
-                android:layout_height="100dp" />
+                android:layout_height="80dp" />
         </LinearLayout>
     </LinearLayout>
 

@@ -4,22 +4,24 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:padding="8dp">
+    android:padding="4dp">
 
     <CheckBox
         android:id="@+id/cbPartyActive"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:clickable="false"
-        android:focusable="false" />
+        android:focusable="false"
+        android:scaleX="0.8"
+        android:scaleY="0.8" />
 
     <TextView
         android:id="@+id/tvPartyName"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:textSize="18sp"
-        android:paddingStart="8dp"
+        android:textSize="14sp"
+        android:paddingStart="4dp"
         android:textColor="?android:attr/textColorPrimary" />
 
 </LinearLayout>

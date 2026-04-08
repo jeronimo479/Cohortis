@@ -37,7 +37,10 @@ import com.example.cohortis.databinding.ActivityMainBinding
 import com.example.cohortis.databinding.DialogEditMemberBinding
 import com.example.cohortis.databinding.DialogLibraryBinding
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
+import com.google.gson.stream.JsonReader
+import java.io.StringReader
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -576,11 +579,16 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
+            etMovement.setText(member.movement ?: "")
+            etSize.setText(member.size ?: "")
+            etXP.setText(member.xp.toString())
+
             etSpecialDetections.setText(member.specialDetections ?: "")
             etSpecialAttacks.setText(member.specialAttacks ?: "")
 
             val updateVisibility = { isPC: Boolean ->
                 llClassAttacks.visibility = if (isPC) View.VISIBLE else View.GONE
+                llNpcStats.visibility = if (isPC) View.GONE else View.VISIBLE
             }
 
             updateVisibility(member.isPC)
@@ -590,10 +598,21 @@ class MainActivity : AppCompatActivity() {
 
             val syncSaveButton = {
                 val currentText = etName.text.toString().trim()
+                val originalName = member.name.trim()
+                
                 if (currentText.isEmpty()) {
                     btnSaveMember.isEnabled = false
                     btnSaveMember.text = getString(R.string.ok)
+                } else if (currentText.equals(originalName, ignoreCase = true)) {
+                    // Name hasn't changed (ignoring case), so it can't be a NEW duplicate
+                    btnSaveMember.isEnabled = true
+                    btnSaveMember.text = getString(R.string.ok)
+                } else if (member.cloneTag != 0.toChar()) {
+                    // It's a clone, names don't need to be unique against the library
+                    btnSaveMember.isEnabled = true
+                    btnSaveMember.text = getString(R.string.ok)
                 } else {
+                    // Name changed and it's not a clone, check for duplicates in library
                     val isDuplicate = memberLibrary.any { it.id != member.id && it.name.equals(currentText, ignoreCase = true) }
                     if (isDuplicate) {
                         btnSaveMember.isEnabled = false
@@ -625,6 +644,9 @@ class MainActivity : AppCompatActivity() {
                     thac0 = etThac0.text.toString().toIntOrNull() ?: thac0
                     armorClass = etArmorClass.text.toString().toIntOrNull() ?: armorClass
                     damageRolls = etDamageRolls.text.toString()
+                    movement = etMovement.text.toString().trim().ifBlank { null }
+                    size = etSize.text.toString().trim().ifBlank { null }
+                    xp = etXP.text.toString().toIntOrNull() ?: 0
                     specialDetections = etSpecialDetections.text.toString()
                     specialAttacks = etSpecialAttacks.text.toString()
                 }
@@ -982,20 +1004,79 @@ class MainActivity : AppCompatActivity() {
      * Handles the logic for importing data from a selected JSON file URI.
      */
     private fun importFromJson(uri: Uri) {
+        val time = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
         try {
             contentResolver.openInputStream(uri)?.use { inputStream ->
-                val json = inputStream.bufferedReader().use { it.readText() }
-                val gson = GsonBuilder().setPrettyPrinting().create()
-                val importData: Map<String, Any> = gson.fromJson(json, object : TypeToken<Map<String, Any>>() {}.type)
-                val importedMembersJson = gson.toJson(importData["members"])
-                val importedPartiesJson = gson.toJson(importData["parties"])
-                val importedMembers: List<Member>? = gson.fromJson(importedMembersJson, object : TypeToken<List<Member>>() {}.type)
-                val importedParties: List<Party>? = gson.fromJson(importedPartiesJson, object : TypeToken<List<Party>>() {}.type)
-                val membersQueue = importedMembers?.toMutableList() ?: mutableListOf()
-                processImportQueue(membersQueue, importedParties ?: emptyList(), 0, 0)
+                val jsonString = inputStream.bufferedReader().use { it.readText() }
+                if (jsonString.isBlank()) throw Exception("Selected file is empty.")
+
+                val gson = GsonBuilder().setLenient().create()
+                val reader = JsonReader(StringReader(jsonString))
+                reader.isLenient = true
+                
+                val rootElement = JsonParser.parseReader(reader)
+                if (!rootElement.isJsonObject) throw Exception("Root of JSON is not an object. Is this a Cohortis library file?")
+                
+                val root = rootElement.asJsonObject
+                
+                // 1. Individually parse members for leniency and logging
+                val importedMembers = mutableListOf<Member>()
+                if (root.has("members") && root.get("members").isJsonArray) {
+                    val membersArray = root.getAsJsonArray("members")
+                    eventFragment?.addLog("[$time] Processing ${membersArray.size()} potential members...")
+                    membersArray.forEachIndexed { index, element ->
+                        try {
+                            val member = gson.fromJson<Member>(element, Member::class.java)
+                            // Sanitize: Provide defaults if critical info is missing
+                            if (member.name.isBlank()) member.name = "Unnamed Imported ${index + 1}"
+                            if (member.id == null) member.id = UUID.randomUUID()
+                            
+                            importedMembers.add(member)
+                            eventFragment?.addLog(" + Member: ${member.name} | HP: ${member.hpFull} | AC: ${member.armorClass}")
+                        } catch (e: Exception) {
+                            eventFragment?.addLog(" ! Error parsing member #$index: ${e.localizedMessage}")
+                            eventFragment?.addLog("   Raw: ${element.toString().take(100)}...")
+                        }
+                    }
+                }
+
+                // 2. Individually parse parties for leniency and logging
+                val importedParties = mutableListOf<Party>()
+                if (root.has("parties") && root.get("parties").isJsonArray) {
+                    val partiesArray = root.getAsJsonArray("parties")
+                    eventFragment?.addLog("[$time] Processing ${partiesArray.size()} potential parties...")
+                    partiesArray.forEachIndexed { index, element ->
+                        try {
+                            val party = gson.fromJson<Party>(element, Party::class.java)
+                            // Sanitize: Provide defaults if critical info is missing
+                            if (party.name.isBlank()) party.name = "Unnamed Party ${index + 1}"
+                            if (party.id == null) party.id = UUID.randomUUID()
+                            
+                            // Also ensure all party members have IDs
+                            party.members.forEach { if (it.id == null) it.id = UUID.randomUUID() }
+                            
+                            importedParties.add(party)
+                            eventFragment?.addLog(" + Party: ${party.name} (${party.members.size} members)")
+                        } catch (e: Exception) {
+                            eventFragment?.addLog(" ! Error parsing party #$index: ${e.localizedMessage}")
+                            eventFragment?.addLog("   Raw: ${element.toString().take(100)}...")
+                        }
+                    }
+                }
+
+                if (importedMembers.isEmpty() && importedParties.isEmpty()) {
+                    eventFragment?.addLog("[$time] Import aborted: No valid members or parties found.")
+                    Toast.makeText(this, "No valid data found in file.", Toast.LENGTH_SHORT).show()
+                    return
+                }
+
+                eventFragment?.addLog("[$time] Finalizing import queue...")
+                processImportQueue(importedMembers, importedParties, 0, 0)
             }
         } catch (e: Exception) {
-            Toast.makeText(this, getString(R.string.import_failed, e.message), Toast.LENGTH_LONG).show()
+            val errorMsg = "Import failed: ${e.localizedMessage}"
+            eventFragment?.addLog("[$time] $errorMsg")
+            Toast.makeText(this, errorMsg, Toast.LENGTH_LONG).show()
             e.printStackTrace()
         }
     }
@@ -1019,8 +1100,8 @@ class MainActivity : AppCompatActivity() {
             partiesToImport.forEach { imported ->
                 if (partyLibrary.none { it.name.equals(imported.name, ignoreCase = true) }) {
                     val partyWithNewIds = imported.copy(
-                        id = UUID.randomUUID(),
-                        members = imported.members.map { it.copy(id = UUID.randomUUID()) }.toMutableList(),
+                        id = if (imported.id == null) UUID.randomUUID() else imported.id,
+                        members = imported.members.map { it.copy(id = if (it.id == null) UUID.randomUUID() else it.id) }.toMutableList(),
                         isActive = false
                     )
                     partyLibrary.add(partyWithNewIds)
@@ -1076,10 +1157,17 @@ class MainActivity : AppCompatActivity() {
     private fun exportToJson(uri: Uri) {
         try {
             contentResolver.openOutputStream(uri)?.use { outputStream ->
+                val sortedMembers = memberLibrary.sortedBy { it.name.lowercase() }
+                val sortedParties = partyLibrary.map { party ->
+                    party.copy(members = party.members.sortedBy { it.name.lowercase() }.toMutableList())
+                }.sortedBy { it.name.lowercase() }
+
                 val exportData = mapOf(
-                    "members" to memberLibrary,
-                    "parties" to partyLibrary
+                    "members" to sortedMembers,
+                    "parties" to sortedParties
                 )
+                // Using default Gson (without setPrettyPrinting) to preserve field order 
+                // However, GSON by default doesn't sort fields alphabetically, it uses reflection order (usually declaration order)
                 val gson = GsonBuilder().setPrettyPrinting().create()
                 val json = gson.toJson(exportData)
                 outputStream.write(json.toByteArray())

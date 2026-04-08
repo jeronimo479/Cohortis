@@ -12,7 +12,7 @@ import java.util.UUID
  * @property isActive Whether this party is currently shown in the active view.
  */
 data class Party(
-    val id: UUID = UUID.randomUUID(),
+    var id: UUID = UUID.randomUUID(),
     var name: String = "",
     val members: MutableList<Member> = mutableListOf(),
     var isActive: Boolean = false

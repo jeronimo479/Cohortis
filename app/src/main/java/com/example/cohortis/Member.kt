@@ -8,9 +8,11 @@ import java.util.UUID
  */
 data class Member(
     /** Unique identifier for the member. */
-    val id: UUID = UUID.randomUUID(),
+    var id: UUID = UUID.randomUUID(),
     /** The name of the member. */
     var name: String = "",
+    /** A character used to distinguish between multiple clones of the same member template. */
+    var cloneTag: Char = 0.toChar(),
     /** Whether the member is a Player Character (PC). Affects UI display and logic. */
     var isPC: Boolean = false,
     /** Description of class and levels (for PCs) or other identifying info. */
@@ -31,14 +33,17 @@ data class Member(
     var specialDetections: String? = null,
     /** Special attack descriptions or modifiers. */
     var specialAttacks: String? = null,
-    /** A character used to distinguish between multiple clones of the same member template. */
-    var cloneTag: Char = 0.toChar(),
-    /** Stores the result of the last 'to hit' roll performed for this member. */
-    var lastToHitRoll: Int = 0
+    /** Movement speed or mode, e.g., "120' (40')", "9, Fl 18". */
+    var movement: String? = null,
+    /** Size category, e.g., "M", "L (10' tall)". */
+    var size: String? = null,
+    /** Experience point value for defeating this member (for NPCs). */
+    var xp: Int = 0
+
 ) {
     /**
      * Returns the name of the member formatted for display.
-     * For clones, it includes the [cloneTag] as a prefix (e.g., "a) Zendra").
+     * For clones, it includes the [cloneTag] as a prefix (e.g., "aZendra").
      *
      * @param full Boolean if true returns full name, else just first word.
      * @return A formatted display name string.
@@ -58,7 +63,7 @@ data class Member(
      * @return True if either [specialDetections] or [specialAttacks] is not blank.
      */
     fun hasSpecial(): Boolean {
-        return !specialDetections.isNullOrBlank() || !specialAttacks.isNullOrBlank()
+        return !specialDetections.isNullOrBlank() || !specialAttacks.isNullOrBlank() || !movement.isNullOrBlank() || !size.isNullOrBlank()
     }
 
     /**
@@ -96,8 +101,7 @@ data class Member(
     fun clone(): Member {
         val newHp = rollHp()
         return this.copy(
-            id = UUID.randomUUID(), 
-            lastToHitRoll = 0,
+            id = UUID.randomUUID(),
             hpFull = newHp,
             hpCurrent = newHp
         )

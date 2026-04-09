@@ -34,6 +34,7 @@
     <string name="master_reset_complete">MASTER RESET COMPLETE</string>
     <string name="import_failed">Import failed: %1$s</string>
     <string name="imported_summary">Imported %1$d members and %2$d parties</string>
+    <string name="imported_summary_detailed">Imported %1$d new members, updated %2$d, and added %3$d parties</string>
     <string name="import_conflict">Import Conflict</string>
     <string name="import_conflict_msg">Member \'%1$s\' (ID: %2$s) has different data than the existing record. Overwrite?</string>
     <string name="overwrite">Overwrite</string>
@@ -55,4 +56,6 @@
     <string name="rounds_reset">Rounds Reset</string>
     <string name="log_hp_change">%1$s %2$s -> %3$s %4$s</string>
     <string name="log_hp_change_simple">%1$s %2$d -> %3$d %4$s</string>
+    <string name="delete_short">DEL</string>
+    <string name="remove_short">X</string>
 </resources>

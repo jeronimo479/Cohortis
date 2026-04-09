@@ -15,18 +15,19 @@ import com.example.cohortis.databinding.FragmentHpModifierBinding
 
 /**
  * A dialog fragment providing a calculator-like interface for modifying a member's
- * hpCurrent if called from partyFragment, or hpFull if called from editMember.
+ * hpCurrent (on a [PartyMember]) or hpFull (on a [Member] template).
  */
 class HpModifierDialogFragment : DialogFragment() {
 
     private var _binding: FragmentHpModifierBinding? = null
     private val binding get() = _binding!!
 
-    private lateinit var member: Member
+    private var partyMember: PartyMember? = null
+    private lateinit var template: Member
     private var isFromEdit: Boolean = false
     private var stayOpen: Boolean = false
-    private var onApplied: ((Member) -> Unit)? = null
-    private var onComplete: ((Member, Int, Int) -> Unit)? = null // member, startVal, endVal
+    private var onApplied: ((PartyMember?, Member) -> Unit)? = null
+    private var onComplete: ((PartyMember?, Member, Int, Int) -> Unit)? = null // pm, template, startVal, endVal
     private var onRollRequested: ((Member, String) -> Int)? = null
     private var accumulator: Int = 0
 
@@ -36,15 +37,17 @@ class HpModifierDialogFragment : DialogFragment() {
 
     companion object {
         fun newInstance(
-            member: Member,
+            partyMember: PartyMember? = null,
+            template: Member,
             isFromEdit: Boolean = false,
             stayOpen: Boolean = false,
             onRollRequested: ((Member, String) -> Int)? = null,
-            onComplete: ((Member, Int, Int) -> Unit)? = null,
-            onApplied: (Member) -> Unit
+            onComplete: ((PartyMember?, Member, Int, Int) -> Unit)? = null,
+            onApplied: (PartyMember?, Member) -> Unit
         ): HpModifierDialogFragment {
             val fragment = HpModifierDialogFragment()
-            fragment.member = member
+            fragment.partyMember = partyMember
+            fragment.template = template
             fragment.isFromEdit = isFromEdit
             fragment.stayOpen = stayOpen
             fragment.onRollRequested = onRollRequested
@@ -62,11 +65,11 @@ class HpModifierDialogFragment : DialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        originalHpFull = member.hpFull
-        originalHpCurrent = member.hpCurrent
-        startVal = if (isFromEdit) member.hpFull else member.hpCurrent
+        originalHpFull = template.hpFull
+        originalHpCurrent = partyMember?.hpCurrent ?: 0
+        startVal = if (isFromEdit) template.hpFull else (partyMember?.hpCurrent ?: 0)
 
-        val displayName = member.getDisplayName()
+        val displayName = partyMember?.getDisplayName(template) ?: template.name
         binding.tvMemberName.text = displayName
         
         setupBoxes()
@@ -102,7 +105,7 @@ class HpModifierDialogFragment : DialogFragment() {
 
         binding.btnMinus.setOnClickListener {
             applyModifier(-accumulator)
-            // If called from partyBox (not isFromEdit), the (-) button should close the dialog.
+            // If called from party view (not isFromEdit), the (-) button should close the dialog.
             if (!isFromEdit) {
                 updateDisplayAndDismiss()
             }
@@ -110,10 +113,10 @@ class HpModifierDialogFragment : DialogFragment() {
 
         binding.btnBox3.setOnClickListener {
             if (isFromEdit) {
-                member.hpFull = accumulator.coerceIn(0, 999)
-                member.hpCurrent = member.hpFull
+                template.hpFull = accumulator.coerceIn(0, 999)
+                partyMember?.let { it.hpCurrent = template.hpFull }
             } else {
-                member.hpCurrent = accumulator.coerceIn(-9, 999)
+                partyMember?.let { it.hpCurrent = accumulator.coerceIn(-9, 999) }
             }
             updateDisplay()
         }
@@ -122,7 +125,7 @@ class HpModifierDialogFragment : DialogFragment() {
     private fun setupBoxes() {
         if (isFromEdit) {
             binding.tvBox1Label.text = "HP ROLLS"
-            val rawText = member.hitDice
+            val rawText = template.hitDice
             if (rawText.isBlank()) {
                 binding.btnBox1.text = "None"
                 binding.btnBox1.setOnClickListener {
@@ -132,15 +135,15 @@ class HpModifierDialogFragment : DialogFragment() {
             } else {
                 setupDiceSpannable(rawText)
             }
-            binding.tvBox2Display.text = "${member.hpFull} : HP FULL"
+            binding.tvBox2Display.text = "${template.hpFull} : HP FULL"
         } else {
             binding.tvBox1Label.text = "HP FULL"
-            binding.btnBox1.text = member.hpFull.toString()
+            binding.btnBox1.text = template.hpFull.toString()
             binding.btnBox1.setOnClickListener {
-                member.hpCurrent = member.hpFull
+                partyMember?.let { it.hpCurrent = template.hpFull }
                 updateDisplay()
             }
-            binding.tvBox2Display.text = "${member.hpCurrent} : CURRENT"
+            binding.tvBox2Display.text = "${partyMember?.hpCurrent ?: 0} : CURRENT"
         }
     }
 
@@ -183,7 +186,7 @@ class HpModifierDialogFragment : DialogFragment() {
 
     private fun rollSegment(segment: String) {
         binding.root.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
-        val rollResult = onRollRequested?.invoke(member, segment) ?: DiceRoller.rollSegmentTotal(segment)
+        val rollResult = onRollRequested?.invoke(template, segment) ?: DiceRoller.rollSegmentTotal(segment)
         accumulator = rollResult
         if (accumulator > 999) accumulator = 999
         updateAccumulatorDisplay()
@@ -195,23 +198,27 @@ class HpModifierDialogFragment : DialogFragment() {
 
     private fun applyModifier(mod: Int) {
         if (isFromEdit) {
-            val oldFull = member.hpFull
-            member.hpFull = (member.hpFull + mod).coerceIn(0, 999)
-            if (member.hpCurrent >= oldFull) {
-                member.hpCurrent = member.hpFull
-            } else {
-                member.hpCurrent = (member.hpCurrent + mod).coerceIn(-9, 999)
+            val oldFull = template.hpFull
+            template.hpFull = (template.hpFull + mod).coerceIn(0, 999)
+            partyMember?.let {
+                if (it.hpCurrent >= oldFull) {
+                    it.hpCurrent = template.hpFull
+                } else {
+                    it.hpCurrent = (it.hpCurrent + mod).coerceIn(-9, 999)
+                }
             }
         } else {
-            member.hpCurrent = (member.hpCurrent + mod).coerceIn(-9, 999)
+            partyMember?.let {
+                it.hpCurrent = (it.hpCurrent + mod).coerceIn(-9, 999)
+            }
         }
         updateDisplay()
     }
 
     private fun updateDisplayAndDismiss() {
         updateDisplay()
-        val endVal = if (isFromEdit) member.hpFull else member.hpCurrent
-        onComplete?.invoke(member, startVal, endVal)
+        val endVal = if (isFromEdit) template.hpFull else (partyMember?.hpCurrent ?: 0)
+        onComplete?.invoke(partyMember, template, startVal, endVal)
         
         binding.btnPlus.isEnabled = false
         binding.btnMinus.isEnabled = false
@@ -224,20 +231,20 @@ class HpModifierDialogFragment : DialogFragment() {
 
     private fun updateDisplay() {
         if (isFromEdit) {
-            binding.tvBox2Display.text = "${member.hpFull} : HP FULL"
+            binding.tvBox2Display.text = "${template.hpFull} : HP FULL"
         } else {
-            binding.tvBox2Display.text = "${member.hpCurrent} : CURRENT"
+            binding.tvBox2Display.text = "${partyMember?.hpCurrent ?: 0} : CURRENT"
         }
-        onApplied?.invoke(member)
+        onApplied?.invoke(partyMember, template)
         accumulator = 0
         updateAccumulatorDisplay()
     }
 
     override fun onCancel(dialog: android.content.DialogInterface) {
         super.onCancel(dialog)
-        member.hpFull = originalHpFull
-        member.hpCurrent = originalHpCurrent
-        onApplied?.invoke(member)
+        template.hpFull = originalHpFull
+        partyMember?.hpCurrent = originalHpCurrent
+        onApplied?.invoke(partyMember, template)
     }
 
     override fun onStart() {

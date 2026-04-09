@@ -3,16 +3,15 @@ package com.example.cohortis
 import java.util.UUID
 
 /**
- * Represents a member (either a Player Character or an NPC/Monster) in a party.
- * Holds stats, hit points, and dice rolling configurations.
+ * Represents a member template (either a Player Character or an NPC/Monster).
+ * Holds stats, max hit points, and dice rolling configurations.
+ * Actual current HP and clone tags are tracked per party instance.
  */
 data class Member(
-    /** Unique identifier for the member. */
+    /** Unique identifier for the member template. */
     var id: UUID = UUID.randomUUID(),
     /** The name of the member. */
     var name: String = "",
-    /** A character used to distinguish between multiple clones of the same member template. */
-    var cloneTag: Char = 0.toChar(),
     /** Whether the member is a Player Character (PC). Affects UI display and logic. */
     var isPC: Boolean = false,
     /** Description of class and levels (for PCs) or other identifying info. */
@@ -25,8 +24,6 @@ data class Member(
     var hitDice: String = "",
     /** The maximum hit points the member can have. */
     var hpFull: Int = 0,
-    /** The current hit points of the member. */
-    var hpCurrent: Int = 0,
     /** String representing damage rolls, e.g., "1d6 | 1d4". */
     var damageRolls: String = "",
     /** Special detection abilities (e.g., "Detect Traps 30%"). */
@@ -41,22 +38,6 @@ data class Member(
     var xp: Int = 0
 
 ) {
-    /**
-     * Returns the name of the member formatted for display.
-     * For clones, it includes the [cloneTag] as a prefix (e.g., "aZendra").
-     *
-     * @param full Boolean if true returns full name, else just first word.
-     * @return A formatted display name string.
-     */
-    fun getDisplayName(full: Boolean = false): String {
-        val nameToUse = if (full) name.trim() else (name.trim().split(" ").firstOrNull() ?: "")
-        return if (cloneTag != 0.toChar()) {
-            "$cloneTag)$nameToUse"
-        } else {
-            nameToUse
-        }
-    }
-
     /**
      * Checks if the member has any special detections or attacks defined.
      *
@@ -90,20 +71,5 @@ data class Member(
         }
         
         return if (total > 0) total else hpFull
-    }
-
-    /**
-     * Creates a deep copy of the member with a new UUID and freshly rolled HP.
-     * Used when adding multiple instances of a monster template to a party.
-     *
-     * @return A new [Member] instance based on the current one.
-     */
-    fun clone(): Member {
-        val newHp = rollHp()
-        return this.copy(
-            id = UUID.randomUUID(),
-            hpFull = newHp,
-            hpCurrent = newHp
-        )
     }
 }

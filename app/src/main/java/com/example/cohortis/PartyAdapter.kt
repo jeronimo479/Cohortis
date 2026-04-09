@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.cohortis.databinding.ItemPartyBinding
+import java.util.UUID
 
 /**
  * Adapter for the top-level RecyclerView that displays a list of [Party] objects.
@@ -14,10 +15,11 @@ import com.example.cohortis.databinding.ItemPartyBinding
  */
 class PartyAdapter(
     initialParties: MutableList<Party>,
-    private val onHpChanged: (Member, Int) -> Unit,
-    private val onHpComplete: (Member, Int, Int) -> Unit,
+    private val getTemplate: (UUID) -> Member?,
+    private val onHpChanged: (PartyMember, Member, Int) -> Unit,
+    private val onHpComplete: (PartyMember, Member, Int, Int) -> Unit,
     private val onDamageTapped: (Member, String) -> Int,
-    private val onMemberLongTapped: (Member, Party) -> Unit,
+    private val onMemberLongTapped: (PartyMember, Member, Party) -> Unit,
     private val onOpenPartyEdit: (Party) -> Unit,
     private val onPartyRenameRequested: (Party) -> Unit,
     private val onOpenMemberLibrary: (Party) -> Unit,
@@ -41,10 +43,11 @@ class PartyAdapter(
             
             val memberAdapter = MemberAdapter(
                 party.members,
+                getTemplate,
                 onHpChanged,
                 onHpComplete,
                 onDamageTapped,
-                { member -> onMemberLongTapped(member, party) }
+                { partyMember, template -> onMemberLongTapped(partyMember, template, party) }
             )
             rvMembers.layoutManager = LinearLayoutManager(root.context)
             rvMembers.adapter = memberAdapter

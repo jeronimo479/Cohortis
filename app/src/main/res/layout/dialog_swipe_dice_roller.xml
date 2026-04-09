@@ -57,7 +57,7 @@
         <Button android:id="@+id/btn3" style="?attr/materialButtonOutlinedStyle" android:text="3" android:layout_width="64dp" android:layout_height="64dp" android:insetTop="0dp" android:insetBottom="0dp" android:padding="0dp" />
         <View android:layout_width="64dp" android:layout_height="64dp" />
 
-        <Button android:id="@+id/btnDel" style="?attr/materialButtonOutlinedStyle" android:text="Del" android:layout_width="64dp" android:layout_height="64dp" android:insetTop="0dp" android:insetBottom="0dp" android:padding="0dp" />
+        <Button android:id="@+id/btnDel" style="?attr/materialButtonOutlinedStyle" android:text="@string/delete_short" android:layout_width="64dp" android:layout_height="64dp" android:insetTop="0dp" android:insetBottom="0dp" android:padding="0dp" />
         <Button android:id="@+id/btn0" style="?attr/materialButtonOutlinedStyle" android:text="0" android:layout_width="64dp" android:layout_height="64dp" android:insetTop="0dp" android:insetBottom="0dp" android:padding="0dp" />
         <Button android:id="@+id/btnOk"
             android:text="OK"

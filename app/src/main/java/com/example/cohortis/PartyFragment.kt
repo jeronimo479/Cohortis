@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.cohortis.databinding.FragmentPartyBinding
+import java.util.UUID
 
 /**
  * Fragment responsible for displaying the list of active parties and their members.
@@ -27,10 +28,11 @@ class PartyFragment : Fragment() {
      */
     fun setupRecyclerView(
         parties: MutableList<Party>,
-        onHpChanged: (Member, Int) -> Unit,
-        onHpComplete: (Member, Int, Int) -> Unit,
+        getTemplate: (UUID) -> Member?,
+        onHpChanged: (PartyMember, Member, Int) -> Unit,
+        onHpComplete: (PartyMember, Member, Int, Int) -> Unit,
         onDamageTapped: (Member, String) -> Int,
-        onMemberLongTapped: (Member, Party) -> Unit,
+        onMemberLongTapped: (PartyMember, Member, Party) -> Unit,
         onOpenPartyLibrary: (Party?) -> Unit,
         onPartyRenameRequested: (Party) -> Unit,
         onOpenMemberLibrary: (Party) -> Unit,
@@ -38,6 +40,7 @@ class PartyFragment : Fragment() {
     ) {
         partyAdapter = PartyAdapter(
             parties, 
+            getTemplate,
             onHpChanged,
             onHpComplete,
             onDamageTapped, 

@@ -36,11 +36,9 @@ import androidx.core.view.WindowInsetsCompat
 import com.example.cohortis.databinding.ActivityMainBinding
 import com.example.cohortis.databinding.DialogEditMemberBinding
 import com.example.cohortis.databinding.DialogLibraryBinding
-import com.google.gson.GsonBuilder
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
-import com.google.gson.stream.JsonReader
-import java.io.StringReader
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -67,7 +65,7 @@ class MainActivity : AppCompatActivity() {
 
     /** Launcher for the system file picker to export data as a JSON file. */
     private val exportLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri: Uri? ->
-        uri?.let { exportToJson(it) }
+        uri?.let { exportToJson(uri) }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -75,6 +73,9 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         
+        dataManager = DataManager(this)
+        loadData()
+
         binding.btnSettings.setOnClickListener {
             showSettingsDialog()
         }
@@ -99,9 +100,6 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        dataManager = DataManager(this)
-        loadData()
-
         setupFragments()
         setupRoundCounter()
     }
@@ -122,8 +120,6 @@ class MainActivity : AppCompatActivity() {
 
     /**
      * Sorts the party library alphabetically, placing the priority party at the top.
-     *
-     * @param list The mutable list of parties to sort.
      */
     private fun sortPartyLibrary(list: MutableList<Party>) {
         val priorityId = dataManager.priorityPartyId
@@ -173,20 +169,20 @@ class MainActivity : AppCompatActivity() {
         binding.root.post {
             partyFragment?.setupRecyclerView(
                 parties = activeParties,
-                onHpChanged = { member, _ ->
-                    updateAllReferences(member)
+                getTemplate = { id -> memberLibrary.find { it.id == id } },
+                onHpChanged = { _, _, _ ->
                     refreshActiveParties()
                 },
-                onHpComplete = { member, start, end ->
+                onHpComplete = { partyMember, template, start, end ->
                     if (start != end) {
-                        eventFragment?.addLog("${member.getDisplayName()} $start -> $end hpCurrent")
+                        eventFragment?.addLog("${partyMember.getDisplayName(template)} $start -> $end hpCurrent")
                     }
                 },
-                onDamageTapped = { member, segment ->
-                    rollDamage(member, segment)
+                onDamageTapped = { template, segment ->
+                    rollDamage(template, segment)
                 },
-                onMemberLongTapped = { member: Member, party: Party ->
-                    showEditMemberDialog(member, fromParty = party)
+                onMemberLongTapped = { partyMember, template, party ->
+                    showEditMemberDialog(template, partyMember = partyMember, fromParty = party)
                 },
                 onOpenPartyLibrary = { party ->
                     if (party != null) {
@@ -219,32 +215,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Synchronizes changes to a member object across all libraries and active lists.
-     * Skips for clones (identified by [Member.cloneTag]) as they are unique instances.
-     *
-     * @param member The updated member object.
-     */
-    private fun updateAllReferences(member: Member) {
-        if (member.cloneTag != 0.toChar()) {
-            return
-        }
-
-        activeParties.forEach { party ->
-            val idx = party.members.indexOfFirst { it.id == member.id }
-            if (idx != -1) party.members[idx] = member
-        }
-        val libIdx = memberLibrary.indexOfFirst { it.id == member.id }
-        if (libIdx != -1) memberLibrary[libIdx] = member
-        
-        partyLibrary.forEach { party ->
-            val idx = party.members.indexOfFirst { it.id == member.id }
-            if (idx != -1) party.members[idx] = member
-        }
-    }
-
-    /**
      * Configures the gesture detectors for the round counter UI.
-     * Supports single tap (next), double tap (prev), long press + swipe (reset).
      */
     @SuppressLint("ClickableViewAccessibility")
     private fun setupRoundCounter() {
@@ -308,39 +279,23 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Updates the UI text and persistent storage for the current round number.
-     */
     private fun updateRoundDisplay() {
         binding.content.tvRoundNumber.text = currentRound.toString()
         dataManager.currentRound = currentRound
     }
 
-    /**
-     * Logs a message related to round changes to the event log.
-     *
-     * @param message The message to log.
-     */
     private fun logRoundChange(message: String) {
         val time = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
         eventFragment?.addLog("[$time] $message")
     }
 
-    /**
-     * Performs a detailed damage roll for a member and logs the results.
-     * Includes d20 to-hit rolls and individual damage dice results.
-     *
-     * @param member The member performing the roll.
-     * @param segment The dice expression segment to roll (e.g., "1d8+2").
-     * @return The total damage sum of the rolls.
-     */
-    private fun rollDamage(member: Member, segment: String): Int {
+    private fun rollDamage(template: Member, segment: String): Int {
         val attackResults = DiceRoller.rollDamageSegmentDetailed(segment)
         if (attackResults.isEmpty()) return 0
 
         binding.root.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
 
-        val nameStr = member.getDisplayName()
+        val nameStr = template.name.split(" ").firstOrNull() ?: ""
         
         val logBuilder = SpannableStringBuilder()
         logBuilder.append(nameStr).append(" ")
@@ -369,9 +324,6 @@ class MainActivity : AppCompatActivity() {
         return attackResults.sumOf { it.damageTotal }
     }
 
-    /**
-     * Helper to set up a simple +/- stepper for an [EditText].
-     */
     private fun setupStepper(valueView: EditText, minusBtn: View, plusBtn: View, min: Int, max: Int, onChanged: ((Int) -> Unit)? = null) {
         minusBtn.setOnClickListener {
             val current = valueView.text.toString().toIntOrNull() ?: 0
@@ -391,9 +343,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Helper to open the dice roller dialog.
-     */
     private fun editHpDiceRolls(title: String, initialValue: String, isPC: Boolean, isHpOrHd: Boolean, onComplete: (String) -> Unit) {
         SwipeDiceRollerDialogFragment.newInstance(
             title = title,
@@ -404,18 +353,10 @@ class MainActivity : AppCompatActivity() {
         ).show(supportFragmentManager, "swipe_dice_${title.lowercase().replace(" ", "_")}")
     }
 
-    /**
-     * Shows a dialog to edit the details of a [Member].
-     *
-     * @param member The member to edit.
-     * @param fromParty Optional party context if editing a member within a party.
-     * @param fromLibrary Boolean indicating if the edit is triggered from the global library.
-     * @param onChanged Callback invoked after changes are saved.
-     */
     private fun showEditMemberDialog(
-        member: Member, 
+        template: Member, 
+        partyMember: PartyMember? = null,
         fromParty: Party? = null,
-        fromLibrary: Boolean = false,
         onChanged: (() -> Unit)? = null
     ) {
         val dp = resources.displayMetrics.density
@@ -426,7 +367,7 @@ class MainActivity : AppCompatActivity() {
             setPadding(p, p, p, 0)
         }
         val tvTitle = TextView(this).apply {
-            text = if (member.cloneTag != 0.toChar()) getString(R.string.edit_clone) else getString(R.string.edit_member)
+            text = if (partyMember?.cloneTag != 0.toChar() && partyMember != null) getString(R.string.edit_clone) else getString(R.string.edit_member)
             setTextColor(Color.BLACK)
             textSize = 20f
             setTypeface(null, android.graphics.Typeface.BOLD)
@@ -436,7 +377,7 @@ class MainActivity : AppCompatActivity() {
         var dialog: AlertDialog? = null
 
         val btnDel = TextView(this).apply {
-            text = "DEL"
+            text = getString(R.string.delete_short)
             setTextColor(Color.RED)
             textSize = 16f
             setTypeface(null, android.graphics.Typeface.BOLD)
@@ -449,12 +390,12 @@ class MainActivity : AppCompatActivity() {
                 addRule(RelativeLayout.CENTER_VERTICAL)
             }
             setOnClickListener {
-                if (fromParty != null) {
+                if (fromParty != null && partyMember != null) {
                     AlertDialog.Builder(this@MainActivity)
                         .setTitle(getString(R.string.remove_member_title))
-                        .setMessage(getString(R.string.remove_member_msg, member.getDisplayName()))
+                        .setMessage(getString(R.string.remove_member_msg, partyMember.getDisplayName(template)))
                         .setPositiveButton(getString(R.string.remove_btn)) { _, _ ->
-                            fromParty.members.removeAll { it.id == member.id }
+                            fromParty.members.remove(partyMember)
                             refreshActiveParties()
                             onChanged?.invoke()
                             dialog?.dismiss()
@@ -462,14 +403,12 @@ class MainActivity : AppCompatActivity() {
                         .setNegativeButton(getString(R.string.skip), null)
                         .show()
                 } else {
-                    // fromLibrary or general delete
                     AlertDialog.Builder(this@MainActivity)
                         .setTitle(getString(R.string.permanent_delete_title))
-                        .setMessage(getString(R.string.permanent_delete_msg, member.name))
+                        .setMessage(getString(R.string.permanent_delete_msg, template.name))
                         .setPositiveButton(getString(R.string.delete_btn)) { _, _ ->
-                            memberLibrary.removeAll { it.id == member.id }
-                            // Also remove from any parties if needed, although mostly template based
-                            partyLibrary.forEach { it.members.removeAll { m -> m.id == member.id } }
+                            memberLibrary.removeAll { it.id == template.id }
+                            partyLibrary.forEach { it.members.removeAll { pm -> pm.memberId == template.id } }
                             saveData()
                             refreshActiveParties()
                             onChanged?.invoke()
@@ -483,15 +422,15 @@ class MainActivity : AppCompatActivity() {
         titleLayout.addView(btnDel)
 
         dialogBinding.apply {
-            etName.setText(member.name)
-            cbIsPC.isChecked = member.isPC
-            etClassLevel.setText(member.classLevels)
+            etName.setText(template.name)
+            cbIsPC.isChecked = template.isPC
+            etClassLevel.setText(template.classLevels)
             
-            etHitDice.setText(member.hitDice)
+            etHitDice.setText(template.hitDice)
             etHitDice.isFocusable = false
             etHitDice.setOnClickListener {
-                val wasEmpty = member.hitDice.isBlank()
-                val oldHpCurrent = member.hpCurrent
+                val wasEmpty = template.hitDice.isBlank()
+                val oldHpCurrent = partyMember?.hpCurrent ?: 0
                 val editTitle = if (cbIsPC.isChecked) getString(R.string.edit_hp) else getString(R.string.edit_hd)
                 editHpDiceRolls(
                     title = editTitle,
@@ -500,72 +439,79 @@ class MainActivity : AppCompatActivity() {
                     isHpOrHd = true
                 ) { diceStr ->
                     etHitDice.setText(diceStr)
-                    member.hitDice = diceStr
+                    template.hitDice = diceStr
                     if (wasEmpty && diceStr.isNotBlank()) {
                         val rolledHp = DiceRoller.rollSegmentTotal(diceStr)
-                        member.hpFull = rolledHp
-                        member.hpCurrent = rolledHp
+                        if (partyMember != null && partyMember.hpFull > 0) {
+                            partyMember.hpFull = rolledHp
+                            partyMember.hpCurrent = rolledHp
+                        } else {
+                            template.hpFull = rolledHp
+                            partyMember?.hpCurrent = rolledHp
+                        }
                         btnEditHpFull.text = rolledHp.toString()
                         btnEditHpCurrent.text = rolledHp.toString()
                         
                         refreshActiveParties()
-                        if (oldHpCurrent != rolledHp) {
-                            eventFragment?.addLog(getString(R.string.log_hp_change_simple, member.getDisplayName(), oldHpCurrent, rolledHp, "hpCurrent"))
+                        if (partyMember != null && oldHpCurrent != rolledHp) {
+                            eventFragment?.addLog(getString(R.string.log_hp_change_simple, partyMember.getDisplayName(template), oldHpCurrent, rolledHp, "hpCurrent"))
                         }
                     }
                 }
             }
             
-            btnEditHpFull.text = member.hpFull.toString()
+            btnEditHpFull.text = partyMember?.getEffectiveHpFull(template)?.toString() ?: template.hpFull.toString()
             btnEditHpFull.setOnClickListener {
-                member.hitDice = etHitDice.text.toString()
+                template.hitDice = etHitDice.text.toString()
                 HpModifierDialogFragment.newInstance(
-                    member = member,
+                    partyMember = partyMember,
+                    template = template,
                     isFromEdit = true,
                     stayOpen = true,
-                    onRollRequested = if (member.isPC) ({ m, s -> rollDamage(m, s) }) else null,
-                    onComplete = { m, start, end ->
+                    onRollRequested = if (template.isPC) ({ m, s -> rollDamage(m, s) }) else null,
+                    onComplete = { pmRes, t, start, end ->
                         if (start != end) {
-                            eventFragment?.addLog(getString(R.string.log_hp_change_simple, m.getDisplayName(), start, end, "hpFull"))
+                            eventFragment?.addLog(getString(R.string.log_hp_change_simple, pmRes?.getDisplayName(t) ?: t.name, start, end, if (pmRes != null && pmRes.hpFull > 0) "hpFull (instance)" else "hpFull"))
                         }
                     },
-                    onApplied = { updatedMember ->
-                        btnEditHpFull.text = updatedMember.hpFull.toString()
-                        btnEditHpCurrent.text = updatedMember.hpCurrent.toString()
-                        member.hpFull = updatedMember.hpFull
-                        member.hpCurrent = updatedMember.hpCurrent
+                    onApplied = { pmRes, updatedTemplate ->
+                        btnEditHpFull.text = pmRes?.getEffectiveHpFull(updatedTemplate)?.toString() ?: updatedTemplate.hpFull.toString()
+                        btnEditHpCurrent.text = pmRes?.hpCurrent?.toString() ?: "0"
                         refreshActiveParties()
                     }
                 ).show(supportFragmentManager, "hp_modifier_edit_full")
             }
 
-            btnEditHpCurrent.text = member.hpCurrent.toString()
+            btnEditHpCurrent.text = partyMember?.hpCurrent?.toString() ?: "0"
+            btnEditHpCurrent.isEnabled = partyMember != null
             btnEditHpCurrent.setOnClickListener {
-                HpModifierDialogFragment.newInstance(
-                    member = member,
-                    isFromEdit = false,
-                    stayOpen = true,
-                    onRollRequested = if (member.isPC) ({ m, s -> rollDamage(m, s) }) else null,
-                    onComplete = { m, start, end ->
-                        if (start != end) {
-                            eventFragment?.addLog(getString(R.string.log_hp_change_simple, m.getDisplayName(), start, end, "hpCurrent"))
+                partyMember?.let { pm ->
+                    HpModifierDialogFragment.newInstance(
+                        partyMember = pm,
+                        template = template,
+                        isFromEdit = false,
+                        stayOpen = true,
+                        onRollRequested = if (template.isPC) ({ m, s -> rollDamage(m, s) }) else null,
+                        onComplete = { pmRes, t, start, end ->
+                            if (start != end) {
+                                eventFragment?.addLog(getString(R.string.log_hp_change_simple, pmRes?.getDisplayName(t) ?: t.name, start, end, "hpCurrent"))
+                            }
+                        },
+                        onApplied = { updatedPm, _ ->
+                            btnEditHpCurrent.text = updatedPm?.hpCurrent?.toString() ?: "0"
+                            refreshActiveParties()
                         }
-                    },
-                    onApplied = { updatedMember ->
-                        btnEditHpCurrent.text = updatedMember.hpCurrent.toString()
-                        member.hpCurrent = updatedMember.hpCurrent
-                        refreshActiveParties()
-                    }
-                ).show(supportFragmentManager, "hp_modifier_edit_current")
+                    ).show(supportFragmentManager, "hp_modifier_edit_current")
+                }
             }
             
-            etThac0.setText(member.thac0.toString())
+            etThac0.setText(template.thac0.toString())
             setupStepper(etThac0, btnThac0Minus, btnThac0Plus, 0, 20)
             
-            etArmorClass.setText(member.armorClass.toString())
+            etArmorClass.setText(template.armorClass.toString())
             setupStepper(etArmorClass, btnAcMinus, btnAcPlus, -10, 10)
 
-            etDamageRolls.setText(member.damageRolls)
+            etDamageRolls.setText(template.damageRolls)
             etDamageRolls.isFocusable = false
             etDamageRolls.setOnClickListener {
                 editHpDiceRolls(
@@ -575,45 +521,39 @@ class MainActivity : AppCompatActivity() {
                     isHpOrHd = false
                 ) { diceStr ->
                     etDamageRolls.setText(diceStr)
-                    member.damageRolls = diceStr
+                    template.damageRolls = diceStr
                 }
             }
 
-            etMovement.setText(member.movement ?: "")
-            etSize.setText(member.size ?: "")
-            etXP.setText(member.xp.toString())
+            etMovement.setText(template.movement ?: "")
+            etSize.setText(template.size ?: "")
+            etXP.setText(template.xp.toString())
 
-            etSpecialDetections.setText(member.specialDetections ?: "")
-            etSpecialAttacks.setText(member.specialAttacks ?: "")
+            etSpecialDetections.setText(template.specialDetections ?: "")
+            etSpecialAttacks.setText(template.specialAttacks ?: "")
 
             val updateVisibility = { isPC: Boolean ->
                 llClassAttacks.visibility = if (isPC) View.VISIBLE else View.GONE
                 llNpcStats.visibility = if (isPC) View.GONE else View.VISIBLE
             }
 
-            updateVisibility(member.isPC)
+            updateVisibility(template.isPC)
             cbIsPC.setOnCheckedChangeListener { _, isChecked -> updateVisibility(isChecked) }
 
             btnRemoveDelete.visibility = View.GONE
 
             val syncSaveButton = {
                 val currentText = etName.text.toString().trim()
-                val originalName = member.name.trim()
+                val originalName = template.name.trim()
                 
                 if (currentText.isEmpty()) {
                     btnSaveMember.isEnabled = false
                     btnSaveMember.text = getString(R.string.ok)
                 } else if (currentText.equals(originalName, ignoreCase = true)) {
-                    // Name hasn't changed (ignoring case), so it can't be a NEW duplicate
-                    btnSaveMember.isEnabled = true
-                    btnSaveMember.text = getString(R.string.ok)
-                } else if (member.cloneTag != 0.toChar()) {
-                    // It's a clone, names don't need to be unique against the library
                     btnSaveMember.isEnabled = true
                     btnSaveMember.text = getString(R.string.ok)
                 } else {
-                    // Name changed and it's not a clone, check for duplicates in library
-                    val isDuplicate = memberLibrary.any { it.id != member.id && it.name.equals(currentText, ignoreCase = true) }
+                    val isDuplicate = memberLibrary.any { it.id != template.id && it.name.equals(currentText, ignoreCase = true) }
                     if (isDuplicate) {
                         btnSaveMember.isEnabled = false
                         btnSaveMember.text = getString(R.string.dupe)
@@ -634,13 +574,12 @@ class MainActivity : AppCompatActivity() {
             syncSaveButton()
 
             btnSaveMember.setOnClickListener {
-                member.apply {
+                template.apply {
                     name = etName.text.toString().trim()
                     isPC = cbIsPC.isChecked
                     classLevels = etClassLevel.text.toString()
                     hitDice = etHitDice.text.toString()
-                    hpFull = btnEditHpFull.text.toString().toIntOrNull() ?: hpFull
-                    hpCurrent = btnEditHpCurrent.text.toString().toIntOrNull() ?: hpCurrent
+                    hpFull = if (partyMember == null || partyMember.hpFull == 0) (btnEditHpFull.text.toString().toIntOrNull() ?: hpFull) else hpFull
                     thac0 = etThac0.text.toString().toIntOrNull() ?: thac0
                     armorClass = etArmorClass.text.toString().toIntOrNull() ?: armorClass
                     damageRolls = etDamageRolls.text.toString()
@@ -650,9 +589,10 @@ class MainActivity : AppCompatActivity() {
                     specialDetections = etSpecialDetections.text.toString()
                     specialAttacks = etSpecialAttacks.text.toString()
                 }
-                updateAllReferences(member)
+                if (partyMember != null && partyMember.hpFull > 0) {
+                    partyMember.hpFull = btnEditHpFull.text.toString().toIntOrNull() ?: partyMember.hpFull
+                }
                 memberLibrary.sortBy { it.name.lowercase() }
-                partyLibrary.forEach { it.members.sortBy { m -> m.name.lowercase() } }
                 refreshActiveParties()
                 onChanged?.invoke()
                 dialog?.dismiss()
@@ -667,13 +607,6 @@ class MainActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    /**
-     * Unified dialog to create or edit a party.
-     *
-     * @param party The party to edit, or a new empty party for creation.
-     * @param isNew True if this is a new party being created.
-     * @param onComplete Callback invoked when the user finishes and saves.
-     */
     private fun editPartyDialog(party: Party, isNew: Boolean = false, onComplete: (() -> Unit)? = null) {
         val dp = resources.displayMetrics.density
         val dialogView = LinearLayout(this).apply {
@@ -738,7 +671,8 @@ class MainActivity : AppCompatActivity() {
                     setTextColor(Color.GRAY)
                 })
             } else {
-                party.members.forEach { member ->
+                party.members.forEach { partyMember ->
+                    val template = memberLibrary.find { it.id == partyMember.memberId } ?: return@forEach
                     val row = LinearLayout(this).apply {
                         orientation = LinearLayout.HORIZONTAL
                         setPadding(4, 2, 4, 2)
@@ -749,7 +683,7 @@ class MainActivity : AppCompatActivity() {
                         layoutParams = params
                     }
                     val btnRemove = Button(this, null, 0, android.R.style.Widget_Material_Button_Borderless).apply {
-                        text = "X"
+                        text = getString(R.string.remove_short)
                         setTextColor(Color.RED)
                         val size = (32 * dp).toInt()
                         layoutParams = LinearLayout.LayoutParams(size, size)
@@ -757,16 +691,16 @@ class MainActivity : AppCompatActivity() {
                         setOnClickListener {
                             AlertDialog.Builder(this@MainActivity)
                                 .setTitle(getString(R.string.remove_member_title))
-                                .setMessage(getString(R.string.remove_member_msg, member.getDisplayName()))
+                                .setMessage(getString(R.string.remove_member_msg, partyMember.getDisplayName(template)))
                                 .setPositiveButton(getString(R.string.remove_btn)) { _, _ ->
-                                    party.members.remove(member)
+                                    party.members.remove(partyMember)
                                     refreshMembers()
                                 }
                                 .show()
                         }
                     }
                     val nameView = TextView(this).apply {
-                        text = member.getDisplayName(full = false)
+                        text = partyMember.getDisplayName(template, full = false)
                         setTextColor(Color.BLACK)
                         textSize = 14f
                         layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
@@ -822,7 +756,12 @@ class MainActivity : AppCompatActivity() {
             text = getString(R.string.reset_all_hp)
             isEnabled = party.name.isNotEmpty()
             setOnClickListener {
-                party.members.forEach { it.hpCurrent = it.hpFull }
+                party.members.forEach { pm ->
+                    val template = memberLibrary.find { it.id == pm.memberId }
+                    if (template != null) {
+                        pm.hpCurrent = pm.getEffectiveHpFull(template)
+                    }
+                }
                 refreshActiveParties()
                 Toast.makeText(this@MainActivity, getString(R.string.all_hp_reset_toast), Toast.LENGTH_SHORT).show()
             }
@@ -859,7 +798,7 @@ class MainActivity : AppCompatActivity() {
 
         if (!isNew) {
             val btnDel = TextView(this).apply {
-                text = "DEL"
+                text = getString(R.string.delete_short)
                 setTextColor(Color.RED)
                 textSize = 16f
                 setTypeface(null, android.graphics.Typeface.BOLD)
@@ -950,11 +889,6 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-
-
-    /**
-     * Shows the app settings dialog, allowing import/export and master reset.
-     */
     private fun showSettingsDialog() {
         var versionTapCount = 0
         val titleView = TextView(this).apply {
@@ -986,9 +920,6 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    /**
-     * Performs a "Master Reset" which wipes all data.
-     */
     private fun performMasterReset() {
         dataManager.clearAll()
         loadData()
@@ -1000,9 +931,6 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, getString(R.string.master_reset_complete), Toast.LENGTH_SHORT).show()
     }
 
-    /**
-     * Handles the logic for importing data from a selected JSON file URI.
-     */
     private fun importFromJson(uri: Uri) {
         val time = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
         try {
@@ -1010,68 +938,65 @@ class MainActivity : AppCompatActivity() {
                 val jsonString = inputStream.bufferedReader().use { it.readText() }
                 if (jsonString.isBlank()) throw Exception("Selected file is empty.")
 
-                val gson = GsonBuilder().setLenient().create()
-                val reader = JsonReader(StringReader(jsonString))
-                reader.isLenient = true
+                val gson = dataManager.gson
                 
-                val rootElement = JsonParser.parseReader(reader)
-                if (!rootElement.isJsonObject) throw Exception("Root of JSON is not an object. Is this a Cohortis library file?")
-                
-                val root = rootElement.asJsonObject
-                
-                // 1. Individually parse members for leniency and logging
+                // 1. Manually parse to identify structure and extract templates
+                val root = JsonParser.parseString(jsonString)
                 val importedMembers = mutableListOf<Member>()
-                if (root.has("members") && root.get("members").isJsonArray) {
-                    val membersArray = root.getAsJsonArray("members")
-                    eventFragment?.addLog("[$time] Processing ${membersArray.size()} potential members...")
-                    membersArray.forEachIndexed { index, element ->
-                        try {
-                            val member = gson.fromJson<Member>(element, Member::class.java)
-                            // Sanitize: Provide defaults if critical info is missing
-                            if (member.name.isBlank()) member.name = "Unnamed Imported ${index + 1}"
-                            if (member.id == null) member.id = UUID.randomUUID()
-                            
-                            importedMembers.add(member)
-                            eventFragment?.addLog(" + Member: ${member.name} | HP: ${member.hpFull} | AC: ${member.armorClass}")
-                        } catch (e: Exception) {
-                            eventFragment?.addLog(" ! Error parsing member #$index: ${e.localizedMessage}")
-                            eventFragment?.addLog("   Raw: ${element.toString().take(100)}...")
+                val importedParties = mutableListOf<Party>()
+                
+                val extractedTemplates = mutableMapOf<UUID, Member>()
+
+                fun scanForMembers(jsonObj: JsonObject) {
+                    // Look for "members" key which could be template list or party members list
+                    if (jsonObj.has("members") && jsonObj.get("members").isJsonArray) {
+                        val arr = jsonObj.getAsJsonArray("members")
+                        arr.forEach { 
+                            if (it.isJsonObject) {
+                                val mObj = it.asJsonObject
+                                // In v1, full Member had hitDice or hpFull. In v2, PartyMember only has hpCurrent.
+                                if (mObj.has("name") && (mObj.has("hitDice") || mObj.has("thac0") || mObj.has("hpFull"))) {
+                                    try {
+                                        val m = gson.fromJson(mObj, Member::class.java)
+                                        if (m != null) extractedTemplates[m.id] = m
+                                    } catch (_: Exception) {}
+                                }
+                            }
+                        }
+                    }
+                    // Recursively look for parties if this is the root
+                    if (jsonObj.has("parties") && jsonObj.get("parties").isJsonArray) {
+                        jsonObj.getAsJsonArray("parties").forEach { 
+                            if (it.isJsonObject) scanForMembers(it.asJsonObject)
                         }
                     }
                 }
 
-                // 2. Individually parse parties for leniency and logging
-                val importedParties = mutableListOf<Party>()
-                if (root.has("parties") && root.get("parties").isJsonArray) {
-                    val partiesArray = root.getAsJsonArray("parties")
-                    eventFragment?.addLog("[$time] Processing ${partiesArray.size()} potential parties...")
-                    partiesArray.forEachIndexed { index, element ->
-                        try {
-                            val party = gson.fromJson<Party>(element, Party::class.java)
-                            // Sanitize: Provide defaults if critical info is missing
-                            if (party.name.isBlank()) party.name = "Unnamed Party ${index + 1}"
-                            if (party.id == null) party.id = UUID.randomUUID()
-                            
-                            // Also ensure all party members have IDs
-                            party.members.forEach { if (it.id == null) it.id = UUID.randomUUID() }
-                            
-                            importedParties.add(party)
-                            eventFragment?.addLog(" + Party: ${party.name} (${party.members.size} members)")
-                        } catch (e: Exception) {
-                            eventFragment?.addLog(" ! Error parsing party #$index: ${e.localizedMessage}")
-                            eventFragment?.addLog("   Raw: ${element.toString().take(100)}...")
-                        }
+                if (root.isJsonObject) {
+                    val rootObj = root.asJsonObject
+                    scanForMembers(rootObj)
+                    
+                    // Now parse the actual collections using standard logic
+                    val membersType = object : TypeToken<List<Member>>() {}.type
+                    val partiesType = object : TypeToken<List<Party>>() {}.type
+                    
+                    if (rootObj.has("members")) {
+                        val topMembers = gson.fromJson<List<Member>>(rootObj.get("members"), membersType) ?: emptyList()
+                        topMembers.forEach { m -> extractedTemplates[m.id] = m }
+                    }
+                    if (rootObj.has("parties")) {
+                        importedParties.addAll(gson.fromJson<List<Party>>(rootObj.get("parties"), partiesType) ?: emptyList())
                     }
                 }
+
+                importedMembers.addAll(extractedTemplates.values)
 
                 if (importedMembers.isEmpty() && importedParties.isEmpty()) {
-                    eventFragment?.addLog("[$time] Import aborted: No valid members or parties found.")
-                    Toast.makeText(this, "No valid data found in file.", Toast.LENGTH_SHORT).show()
-                    return
+                    throw Exception("No valid members or parties found in file.")
                 }
 
-                eventFragment?.addLog("[$time] Finalizing import queue...")
-                processImportQueue(importedMembers, importedParties, 0, 0)
+                eventFragment?.addLog("[$time] Importing ${importedMembers.size} members and ${importedParties.size} parties...")
+                processImportQueue(importedMembers.toMutableList(), importedParties, 0, 0, 0)
             }
         } catch (e: Exception) {
             val errorMsg = "Import failed: ${e.localizedMessage}"
@@ -1081,30 +1006,45 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Recursively processes the queue of members to be imported, handling conflicts.
-     *
-     * @param membersQueue Queue of members left to import.
-     * @param partiesToImport List of parties to import.
-     * @param membersAdded Counter for members added.
-     * @param partiesAdded Counter for parties added.
-     */
     private fun processImportQueue(
         membersQueue: MutableList<Member>,
         partiesToImport: List<Party>,
-        membersAdded: Int,
-        partiesAdded: Int
+        membersNew: Int,
+        membersUpdated: Int,
+        partiesAdded: Int,
+        idMap: MutableMap<UUID, UUID> = mutableMapOf()
     ) {
         if (membersQueue.isEmpty()) {
             var finalPartiesAdded = partiesAdded
             partiesToImport.forEach { imported ->
                 if (partyLibrary.none { it.name.equals(imported.name, ignoreCase = true) }) {
-                    val partyWithNewIds = imported.copy(
-                        id = if (imported.id == null) UUID.randomUUID() else imported.id,
-                        members = imported.members.map { it.copy(id = if (it.id == null) UUID.randomUUID() else it.id) }.toMutableList(),
+                    // Update member references based on the map (resolves ID mismatches during consolidation)
+                    imported.members.forEach { pm ->
+                        idMap[pm.memberId]?.let { pm.memberId = it }
+                    }
+
+                    // Try name-based resolution if ID mapping didn't help (crucial for v1 -> v2 mismatches)
+                    imported.members.forEach { pm ->
+                        if (memberLibrary.none { it.id == pm.memberId }) {
+                            pm.tempName?.let { name ->
+                                memberLibrary.find { it.name.equals(name, ignoreCase = true) }?.let {
+                                    pm.memberId = it.id
+                                }
+                            }
+                        }
+                    }
+
+                    // Final sanitization: ensure all PartyMember references actually point to a known template
+                    val sanitizedMembers = imported.members.filter { pm ->
+                        memberLibrary.any { it.id == pm.memberId }
+                    }.toMutableList()
+                    
+                    val partyWithSanitizedMembers = imported.copy(
+                        id = UUID.randomUUID(),
+                        members = sanitizedMembers,
                         isActive = false
                     )
-                    partyLibrary.add(partyWithNewIds)
+                    partyLibrary.add(partyWithSanitizedMembers)
                     finalPartiesAdded++
                 }
             }
@@ -1112,38 +1052,51 @@ class MainActivity : AppCompatActivity() {
             saveData()
             loadData()
             refreshActiveParties()
-            Toast.makeText(this, getString(R.string.imported_summary, membersAdded, finalPartiesAdded), Toast.LENGTH_LONG).show()
+            val summary = if (membersUpdated > 0) {
+                getString(R.string.imported_summary_detailed, membersNew, membersUpdated, finalPartiesAdded)
+            } else {
+                getString(R.string.imported_summary, membersNew, finalPartiesAdded)
+            }
+            Toast.makeText(this, summary, Toast.LENGTH_LONG).show()
             return
         }
 
         val imported = membersQueue.removeAt(0)
-        val existing = memberLibrary.find { it.id == imported.id }
+        // Check for existing by ID first, then by name for consolidation
+        val existingById = memberLibrary.find { it.id == imported.id }
+        val existingByName = memberLibrary.find { it.name.equals(imported.name, ignoreCase = true) }
+        val existing = existingById ?: existingByName
 
         if (existing == null) {
-            if (memberLibrary.none { it.name.equals(imported.name, ignoreCase = true) }) {
-                memberLibrary.add(imported)
-                processImportQueue(membersQueue, partiesToImport, membersAdded + 1, partiesAdded)
-            } else {
-                processImportQueue(membersQueue, partiesToImport, membersAdded, partiesAdded)
-            }
+            memberLibrary.add(imported)
+            idMap[imported.id] = imported.id
+            processImportQueue(membersQueue, partiesToImport, membersNew + 1, membersUpdated, partiesAdded, idMap)
         } else {
-            if (existing == imported) {
-                processImportQueue(membersQueue, partiesToImport, membersAdded, partiesAdded)
+            // Conflict check
+            if (existing == imported || (existingByName != null && existingById == null)) {
+                // If it matches exactly or just by name (preferring existing library truth), map the ID
+                idMap[imported.id] = existing.id
+                processImportQueue(membersQueue, partiesToImport, membersNew, membersUpdated, partiesAdded, idMap)
             } else {
+                // Same ID but different data
                 AlertDialog.Builder(this)
                     .setTitle(getString(R.string.import_conflict))
                     .setMessage(getString(R.string.import_conflict_msg, imported.name, imported.id))
                     .setPositiveButton(getString(R.string.overwrite)) { _, _ ->
                         val index = memberLibrary.indexOf(existing)
                         if (index != -1) memberLibrary[index] = imported
-                        processImportQueue(membersQueue, partiesToImport, membersAdded + 1, partiesAdded)
+                        idMap[imported.id] = imported.id
+                        processImportQueue(membersQueue, partiesToImport, membersNew, membersUpdated + 1, partiesAdded, idMap)
                     }
                     .setNegativeButton(getString(R.string.skip)) { _, _ ->
-                        processImportQueue(membersQueue, partiesToImport, membersAdded, partiesAdded)
+                        idMap[imported.id] = existing.id
+                        processImportQueue(membersQueue, partiesToImport, membersNew, membersUpdated, partiesAdded, idMap)
                     }
                     .setNeutralButton(getString(R.string.import_as_new)) { _, _ ->
-                        memberLibrary.add(imported.copy(id = UUID.randomUUID()))
-                        processImportQueue(membersQueue, partiesToImport, membersAdded + 1, partiesAdded)
+                        val newId = UUID.randomUUID()
+                        memberLibrary.add(imported.copy(id = newId))
+                        idMap[imported.id] = newId
+                        processImportQueue(membersQueue, partiesToImport, membersNew + 1, membersUpdated, partiesAdded, idMap)
                     }
                     .setCancelable(false)
                     .show()
@@ -1151,25 +1104,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Exports the current library and parties to a JSON file at the given URI.
-     */
     private fun exportToJson(uri: Uri) {
         try {
             contentResolver.openOutputStream(uri)?.use { outputStream ->
-                val sortedMembers = memberLibrary.sortedBy { it.name.lowercase() }
-                val sortedParties = partyLibrary.map { party ->
-                    party.copy(members = party.members.sortedBy { it.name.lowercase() }.toMutableList())
-                }.sortedBy { it.name.lowercase() }
-
-                val exportData = mapOf(
-                    "members" to sortedMembers,
-                    "parties" to sortedParties
+                val exportData = LibraryExport(
+                    version = DataManager.CURRENT_SCHEMA_VERSION,
+                    members = memberLibrary.sortedBy { it.name.lowercase() },
+                    parties = partyLibrary.sortedBy { it.name.lowercase() }
                 )
-                // Using default Gson (without setPrettyPrinting) to preserve field order 
-                // However, GSON by default doesn't sort fields alphabetically, it uses reflection order (usually declaration order)
-                val gson = GsonBuilder().setPrettyPrinting().create()
-                val json = gson.toJson(exportData)
+                val json = dataManager.gson.toJson(exportData)
                 outputStream.write(json.toByteArray())
                 Toast.makeText(this, getString(R.string.library_exported_success), Toast.LENGTH_SHORT).show()
             }
@@ -1179,13 +1122,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Shows a full-screen dialog to manage the global member library.
-     * Allows creating members or adding them to a target party.
-     *
-     * @param targetParty If provided, selecting a member adds it to this party.
-     * @param onDismiss Callback invoked when the library dialog is closed.
-     */
     @SuppressLint("ClickableViewAccessibility")
     private fun showMemberLibraryManager(targetParty: Party? = null, onDismiss: (() -> Unit)? = null) {
         val dialog = Dialog(this, android.R.style.Theme_Material_Light_NoActionBar_Fullscreen)
@@ -1230,8 +1166,8 @@ class MainActivity : AppCompatActivity() {
             override fun onLongPress(e: MotionEvent) {
                 val pos = libBinding.lvItems.pointToPosition(e.x.toInt(), e.y.toInt())
                 if (pos != -1) {
-                    val member = memberLibrary[pos]
-                    showEditMemberDialog(member, fromLibrary = true, onChanged = {
+                    val template = memberLibrary[pos]
+                    showEditMemberDialog(template, onChanged = {
                         libBinding.lvItems.adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_list_item_1, memberLibrary.map { it.name })
                     })
                 }
@@ -1258,76 +1194,65 @@ class MainActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    /**
-     * Adds multiple unique clones of a member template to a party.
-     * Clones are tagged with a unique character (a-z, 0-9).
-     *
-     * @param template Member template to clone.
-     * @param targetParty Party to receive the clones.
-     * @param count Number of clones to add.
-     */
     private fun addClonesToParty(template: Member, targetParty: Party, count: Int) {
         val tags = ('a'..'z').toList() + ('0'..'9').toList()
         var addedCount = 0
         repeat(count) {
             val existingTags = targetParty.members
-                .filter { it.name == template.name && it.cloneTag != 0.toChar() }
+                .filter { it.memberId == template.id && it.cloneTag != 0.toChar() }
                 .map { it.cloneTag }
                 .toSet()
             val availableTag = tags.firstOrNull { it !in existingTags }
             if (availableTag != null) {
-                val cloned = template.clone()
-                cloned.cloneTag = availableTag
-                targetParty.members.add(cloned)
+                val rolledHp = template.rollHp()
+                val partyMember = PartyMember(
+                    memberId = template.id,
+                    hpCurrent = rolledHp,
+                    hpFull = rolledHp,
+                    cloneTag = availableTag
+                )
+                targetParty.members.add(partyMember)
                 addedCount++
             } else { return@repeat }
         }
         if (addedCount > 0) {
-            targetParty.members.sortBy { it.name.lowercase() }
+            targetParty.members.sortBy { pm -> memberLibrary.find { it.id == pm.memberId }?.name?.lowercase() ?: "" }
             refreshActiveParties()
             Toast.makeText(this, getString(R.string.added_clones, addedCount, template.name), Toast.LENGTH_SHORT).show()
         }
     }
 
-    /**
-     * Adds a reference to an existing library member to a target party.
-     *
-     * @param member Library member to add.
-     * @param targetParty Target party.
-     */
-    private fun addMemberByReference(member: Member, targetParty: Party) {
-        if (targetParty.members.any { it.id == member.id }) {
-            Toast.makeText(this, getString(R.string.already_in_party, member.name), Toast.LENGTH_SHORT).show()
+    private fun addMemberByReference(template: Member, targetParty: Party) {
+        if (targetParty.members.any { it.memberId == template.id && it.cloneTag == 0.toChar() }) {
+            Toast.makeText(this, getString(R.string.already_in_party, template.name), Toast.LENGTH_SHORT).show()
             return
         }
-        targetParty.members.add(member)
-        targetParty.members.sortBy { it.name.lowercase() }
+        targetParty.members.add(PartyMember(memberId = template.id, hpCurrent = template.hpFull, hpFull = 0))
+        targetParty.members.sortBy { pm -> memberLibrary.find { it.id == pm.memberId }?.name?.lowercase() ?: "" }
         refreshActiveParties()
-        Toast.makeText(this, getString(R.string.added_member, member.name), Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, getString(R.string.added_member, template.name), Toast.LENGTH_SHORT).show()
     }
 
-    /**
-     * Creates a new blank member in the global library and opens the edit dialog.
-     *
-     * @param targetParty Optional party to add the new member to.
-     * @param onChanged Callback invoked after changes are saved.
-     */
     private fun createNewMember(targetParty: Party? = null, onChanged: (() -> Unit)? = null) {
-        val newMember = Member(name = "", classLevels = "")
-        memberLibrary.add(newMember)
-        when {
-            targetParty != null -> {
-                targetParty.members.add(newMember)
-            }
+        val newTemplate = Member(name = "", classLevels = "")
+        memberLibrary.add(newTemplate)
+        
+        var newPartyMember: PartyMember? = null
+        if (targetParty != null) {
+            newPartyMember = PartyMember(memberId = newTemplate.id, hpCurrent = 0, hpFull = 0)
+            targetParty.members.add(newPartyMember)
         }
+        
         saveData()
         refreshActiveParties()
-        showEditMemberDialog(newMember, fromParty = targetParty, fromLibrary = targetParty == null, onChanged = onChanged)
+        showEditMemberDialog(
+            template = newTemplate, 
+            partyMember = newPartyMember,
+            fromParty = targetParty, 
+            onChanged = onChanged
+        )
     }
 
-    /**
-     * Shows a full-screen dialog to manage the global party library.
-     */
     private fun showPartyLibraryManager() {
         val dialog = Dialog(this, android.R.style.Theme_Material_Light_NoActionBar_Fullscreen)
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)

@@ -137,7 +137,7 @@ class EventFragment : Fragment() {
         }
 
         val btnDel = Button(ctx).apply {
-            text = "DEL"
+            text = getString(R.string.delete_short)
             setTextColor(Color.RED)
             setBackgroundColor(Color.TRANSPARENT)
             val params = RelativeLayout.LayoutParams(

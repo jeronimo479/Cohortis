@@ -13,7 +13,8 @@ data class PartyMember(
     var hpCurrent: Int = 0,
     /** The maximum hit points for this specific instance (useful for clones). */
     var hpFull: Int = 0,
-    /** A character used to distinguish between multiple clones of the same member template. */
+    /** A character used to distinguish between multiple clones of the same member template.
+        range : 0=original, ['0'-'9''a'-'z'] */
     var cloneTag: Char = 0.toChar()
 ) {
     /** Temporary storage for name during JSON import/migration to resolve ID mismatches. */

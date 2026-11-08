@@ -65,9 +65,9 @@ class HpModifierDialogFragment : DialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        originalHpFull = template.hpFull
+        originalHpFull = getFullHp()
         originalHpCurrent = partyMember?.hpCurrent ?: 0
-        startVal = if (isFromEdit) template.hpFull else (partyMember?.hpCurrent ?: 0)
+        startVal = if (isFromEdit) getFullHp() else (partyMember?.hpCurrent ?: 0)
 
         val displayName = partyMember?.getDisplayName(template) ?: template.name
         binding.tvMemberName.text = displayName
@@ -90,35 +90,43 @@ class HpModifierDialogFragment : DialogFragment() {
             }
         }
 
-        binding.btnClear.setOnClickListener {
+        binding.btn0.setOnLongClickListener {
             accumulator = 0
             updateAccumulatorDisplay()
-        }
-
-        binding.btnOk.setOnClickListener {
-            updateDisplayAndDismiss()
+            it.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+            true
         }
 
         binding.btnPlus.setOnClickListener {
-            applyModifier(accumulator)
+            applyModifierAndDismiss(accumulator)
         }
 
         binding.btnMinus.setOnClickListener {
-            applyModifier(-accumulator)
-            // If called from party view (not isFromEdit), the (-) button should close the dialog.
-            if (!isFromEdit) {
-                updateDisplayAndDismiss()
-            }
+            applyModifierAndDismiss(-accumulator)
         }
 
         binding.btnBox3.setOnClickListener {
             if (isFromEdit) {
-                template.hpFull = accumulator.coerceIn(0, 999)
-                partyMember?.let { it.hpCurrent = template.hpFull }
+                setFullHp(accumulator)
             } else {
                 partyMember?.let { it.hpCurrent = accumulator.coerceIn(-9, 999) }
             }
-            updateDisplay()
+            updateDisplayAndDismiss(100L)
+        }
+    }
+
+    private fun getFullHp(): Int {
+        return partyMember?.getEffectiveHpFull(template) ?: template.hpFull
+    }
+
+    private fun setFullHp(newFull: Int) {
+        val clamped = newFull.coerceIn(0, 999)
+        val pm = partyMember
+        if (pm != null && pm.hpFull > 0) {
+            pm.hpFull = clamped
+        } else {
+            template.hpFull = clamped
+            pm?.hpFull = clamped
         }
     }
 
@@ -135,13 +143,13 @@ class HpModifierDialogFragment : DialogFragment() {
             } else {
                 setupDiceSpannable(rawText)
             }
-            binding.tvBox2Display.text = "${template.hpFull} : HP FULL"
+            binding.tvBox2Display.text = "${getFullHp()} : HP FULL"
         } else {
             binding.tvBox1Label.text = "HP FULL"
-            binding.btnBox1.text = template.hpFull.toString()
+            binding.btnBox1.text = getFullHp().toString()
             binding.btnBox1.setOnClickListener {
-                partyMember?.let { it.hpCurrent = template.hpFull }
-                updateDisplay()
+                partyMember?.let { it.hpCurrent = getFullHp() }
+                updateDisplayAndDismiss()
             }
             binding.tvBox2Display.text = "${partyMember?.hpCurrent ?: 0} : CURRENT"
         }
@@ -196,42 +204,34 @@ class HpModifierDialogFragment : DialogFragment() {
         binding.btnBox3.text = accumulator.toString()
     }
 
-    private fun applyModifier(mod: Int) {
+    private fun applyModifierAndDismiss(mod: Int) {
         if (isFromEdit) {
-            val oldFull = template.hpFull
-            template.hpFull = (template.hpFull + mod).coerceIn(0, 999)
-            partyMember?.let {
-                if (it.hpCurrent >= oldFull) {
-                    it.hpCurrent = template.hpFull
-                } else {
-                    it.hpCurrent = (it.hpCurrent + mod).coerceIn(-9, 999)
-                }
-            }
+            val currentFull = getFullHp()
+            setFullHp(currentFull + mod)
         } else {
             partyMember?.let {
                 it.hpCurrent = (it.hpCurrent + mod).coerceIn(-9, 999)
             }
         }
-        updateDisplay()
+        updateDisplayAndDismiss()
     }
 
-    private fun updateDisplayAndDismiss() {
+    private fun updateDisplayAndDismiss(delayMs: Long = 100L) {
         updateDisplay()
-        val endVal = if (isFromEdit) template.hpFull else (partyMember?.hpCurrent ?: 0)
+        val endVal = if (isFromEdit) getFullHp() else (partyMember?.hpCurrent ?: 0)
         onComplete?.invoke(partyMember, template, startVal, endVal)
         
         binding.btnPlus.isEnabled = false
         binding.btnMinus.isEnabled = false
         binding.btnBox3.isEnabled = false
         binding.btnBox1.isEnabled = false
-        binding.btnOk.isEnabled = false
         
-        binding.root.postDelayed({ if (isAdded) dismiss() }, 250)
+        binding.root.postDelayed({ if (isAdded) dismiss() }, delayMs)
     }
 
     private fun updateDisplay() {
         if (isFromEdit) {
-            binding.tvBox2Display.text = "${template.hpFull} : HP FULL"
+            binding.tvBox2Display.text = "${getFullHp()} : HP FULL"
         } else {
             binding.tvBox2Display.text = "${partyMember?.hpCurrent ?: 0} : CURRENT"
         }
@@ -242,8 +242,11 @@ class HpModifierDialogFragment : DialogFragment() {
 
     override fun onCancel(dialog: android.content.DialogInterface) {
         super.onCancel(dialog)
-        template.hpFull = originalHpFull
-        partyMember?.hpCurrent = originalHpCurrent
+        if (isFromEdit) {
+            setFullHp(originalHpFull)
+        } else {
+            partyMember?.hpCurrent = originalHpCurrent
+        }
         onApplied?.invoke(partyMember, template)
     }
 

@@ -91,7 +91,7 @@ class MemberAdapter(
                     HpModifierDialogFragment.newInstance(
                         partyMember = partyMember,
                         template = template,
-                        onRollRequested = if (template.isPC) ({ m, s -> onDamageTapped(m, s) }) else null,
+                        onRollRequested = { m, s -> onDamageTapped(m, s) },
                         onComplete = { pm, t, start, end -> pm?.let { onHpComplete(it, t, start, end) } },
                         onApplied = { pm, t ->
                             pm?.let { nonNullPm ->
@@ -175,10 +175,4 @@ class MemberAdapter(
     }
 
     override fun getItemCount(): Int = partyMembers.size
-
-    fun updateList(newList: List<PartyMember>) {
-        partyMembers.clear()
-        partyMembers.addAll(newList)
-        notifyDataSetChanged()
-    }
 }

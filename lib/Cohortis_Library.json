@@ -1,0 +1,1689 @@
+{
+    "version": 2,
+    "priorityPartyId": "9c11b198-4708-4653-8137-179dc7458885",
+    "date": "2026-11-07",
+    "members": [
+        {
+            "id": "65be87e9-902e-47d7-9c14-dd260c1e4f3e",
+            "name": "Acolyte",
+            "isPC": false,
+            "thac0": 19,
+            "armorClass": 7,
+            "hitDice": "d8",
+            "hpFull": 5,
+            "damageRolls": "d6",
+            "xp": 10
+        },
+        {
+            "id": "a51fe239-9d31-4bb8-a226-026e54d67aa6",
+            "name": "Aiger Akbane",
+            "isPC": true,
+            "classLevels": "F2",
+            "thac0": 20,
+            "armorClass": 4,
+            "hpFull": 18,
+            "xp": 0
+        },
+        {
+            "id": "4f2e9cf9-e60b-491c-85d9-967282d4fa8d",
+            "name": "Ankheg",
+            "isPC": false,
+            "thac0": 15,
+            "armorClass": 2,
+            "hitDice": "3d8+3",
+            "hpFull": 17,
+            "damageRolls": "3d6 | d4",
+            "movement": "120' (40')",
+            "size": "L",
+            "xp": 120
+        },
+        {
+            "id": "a6c27236-3528-4a09-8b9b-5ce579a18f36",
+            "name": "Bandit",
+            "isPC": false,
+            "thac0": 20,
+            "armorClass": 7,
+            "hitDice": "d8",
+            "hpFull": 4,
+            "damageRolls": "d6",
+            "xp": 10
+        },
+        {
+            "id": "ace2a896-2aeb-403e-b3a9-1d2233866853",
+            "name": "Banshee",
+            "isPC": false,
+            "thac0": 13,
+            "armorClass": 0,
+            "hitDice": "7d8",
+            "hpFull": 32,
+            "damageRolls": "d8",
+            "specialAttacks": "Wail of Death",
+            "xp": 1200
+        },
+        {
+            "id": "f63de65f-0726-4900-a0e8-a7dbf2a7a801",
+            "name": "Basilisk",
+            "isPC": false,
+            "thac0": 13,
+            "armorClass": 4,
+            "hitDice": "6d8+6",
+            "hpFull": 33,
+            "damageRolls": "d10",
+            "specialDetections": "Petrifying Gaze",
+            "size": "M",
+            "xp": 650
+        },
+        {
+            "id": "228b7dd5-96b5-400c-84d4-29a9e2bba944",
+            "name": "Bat",
+            "isPC": false,
+            "thac0": 20,
+            "armorClass": 8,
+            "hitDice": "d2",
+            "hpFull": 9,
+            "damageRolls": "d6",
+            "specialDetections": "Blindsight",
+            "specialAttacks": "Distraction",
+            "xp": 0
+        },
+        {
+            "id": "88c65859-58ab-4ada-b391-8ac000ce2881",
+            "name": "Beholder",
+            "isPC": false,
+            "thac0": 10,
+            "armorClass": 0,
+            "hitDice": "11d8",
+            "hpFull": 50,
+            "damageRolls": "2d4",
+            "specialAttacks": "Eye Rays",
+            "size": "L",
+            "xp": 4000
+        },
+        {
+            "id": "06855746-f32d-4fdf-a56e-4a92b6e852cf",
+            "name": "Bran Helder",
+            "isPC": true,
+            "classLevels": "F2",
+            "thac0": 20,
+            "armorClass": 4,
+            "hpFull": 20,
+            "xp": 0
+        },
+        {
+            "id": "af2e6ff7-168f-4319-bdf0-ed3203bd2bdf",
+            "name": "Bugbear",
+            "isPC": false,
+            "thac0": 16,
+            "armorClass": 5,
+            "hitDice": "3d8+1",
+            "hpFull": 15,
+            "damageRolls": "2d4",
+            "movement": "90' (30')",
+            "size": "L",
+            "xp": 75
+        },
+        {
+            "id": "7e79fcca-1eb8-4f29-a525-8c40854888c1",
+            "name": "Caldus 'Sparrowbone' Marr",
+            "isPC": true,
+            "classLevels": "M1",
+            "thac0": 20,
+            "armorClass": 9,
+            "hpFull": 4,
+            "xp": 0
+        },
+        {
+            "id": "87bec794-5408-4ab2-8e3b-a612a81d3b46",
+            "name": "Carrion Crawler",
+            "isPC": false,
+            "thac0": 16,
+            "armorClass": 3,
+            "hitDice": "3d8+3",
+            "hpFull": 16,
+            "damageRolls": "d2",
+            "specialAttacks": "Paralytic Tentacles",
+            "size": "L",
+            "xp": 75
+        },
+        {
+            "id": "eb9a9a43-b17f-40fc-bc05-3eaabd80aa0e",
+            "name": "Centaur",
+            "isPC": false,
+            "thac0": 16,
+            "armorClass": 5,
+            "hitDice": "4d8",
+            "hpFull": 18,
+            "damageRolls": "d6 | d6 | d8",
+            "size": "L",
+            "xp": 125
+        },
+        {
+            "id": "dc778d74-e213-46d0-8971-b62068fe752f",
+            "name": "Chimera",
+            "isPC": false,
+            "thac0": 11,
+            "armorClass": 4,
+            "hitDice": "9d8",
+            "hpFull": 41,
+            "damageRolls": "d3 | d3 | d4 | d4 | 2d4 | 3d4",
+            "size": "L",
+            "xp": 1400
+        },
+        {
+            "id": "1b33b960-6eec-4d59-b766-145cd9a91d81",
+            "name": "Cockatrice",
+            "isPC": false,
+            "thac0": 15,
+            "armorClass": 6,
+            "hitDice": "5d8",
+            "hpFull": 23,
+            "damageRolls": "d3",
+            "specialAttacks": "Petrifying Touch",
+            "xp": 350
+        },
+        {
+            "id": "f53e654d-923d-43de-9bc4-35ba87aef34b",
+            "name": "Corin",
+            "isPC": true,
+            "classLevels": "Cleric 3",
+            "thac0": 18,
+            "armorClass": 5,
+            "hitDice": "3d8+3",
+            "hpFull": 17,
+            "damageRolls": "d6+1",
+            "xp": 0
+        },
+        {
+            "id": "69cf0613-d546-4f53-b66f-a1638ffc87a2",
+            "name": "Displacer Beast",
+            "isPC": false,
+            "thac0": 14,
+            "armorClass": 4,
+            "hitDice": "6d8",
+            "hpFull": 27,
+            "damageRolls": "2d4 | 2d4",
+            "specialAttacks": "Displacement",
+            "size": "L",
+            "xp": 650
+        },
+        {
+            "id": "29974c77-baf3-40ba-a8a0-84b43af834a5",
+            "name": "Doppelganger",
+            "isPC": false,
+            "thac0": 16,
+            "armorClass": 5,
+            "hitDice": "4d8",
+            "hpFull": 18,
+            "damageRolls": "d12",
+            "specialAttacks": "Shapechange",
+            "xp": 175
+        },
+        {
+            "id": "94c1c89a-247d-4dc9-8f17-4bdf82c1feef",
+            "name": "Doran",
+            "isPC": true,
+            "classLevels": "Dwarf Fighter 3",
+            "thac0": 18,
+            "armorClass": 4,
+            "hitDice": "3d10+6",
+            "hpFull": 24,
+            "damageRolls": "d8+2",
+            "xp": 0
+        },
+        {
+            "id": "2282ed88-8e3a-43b4-a5eb-05d23fb98b58",
+            "name": "Dwarven Skeleton Captain",
+            "isPC": false,
+            "thac0": 17,
+            "armorClass": 4,
+            "hitDice": "3d8",
+            "hpFull": 25,
+            "damageRolls": "d8",
+            "specialDetections": "Undead immunities",
+            "specialAttacks": "Elite discipline",
+            "xp": 0
+        },
+        {
+            "id": "bfb33e6a-26d4-49ed-8bbb-29c07c19c69d",
+            "name": "Elros",
+            "isPC": true,
+            "classLevels": "Mage 3",
+            "thac0": 19,
+            "armorClass": 9,
+            "hitDice": "3d4+3",
+            "hpFull": 10,
+            "damageRolls": "d4",
+            "xp": 0
+        },
+        {
+            "id": "9873e0e6-434f-44ac-81c8-2bb09a4849bd",
+            "name": "Ettercap",
+            "isPC": false,
+            "thac0": 15,
+            "armorClass": 6,
+            "hitDice": "5d8",
+            "hpFull": 23,
+            "damageRolls": "d8 | d3",
+            "specialAttacks": "Poison Bite",
+            "xp": 275
+        },
+        {
+            "id": "7dff4009-cdb0-4815-9bba-cf4e0afb8c2e",
+            "name": "Ettin",
+            "isPC": false,
+            "thac0": 10,
+            "armorClass": 3,
+            "hitDice": "10d8",
+            "hpFull": 45,
+            "damageRolls": "2d8 | 3d6",
+            "size": "L",
+            "xp": 3000
+        },
+        {
+            "id": "1b5a0543-5a6c-49cc-824a-0bd7ff024005",
+            "name": "Faelar",
+            "isPC": true,
+            "classLevels": "Elf Fighter/Mage 2/2",
+            "thac0": 19,
+            "armorClass": 5,
+            "hitDice": "2d8+2 | 2d4",
+            "hpFull": 14,
+            "damageRolls": "d8",
+            "xp": 0
+        },
+        {
+            "id": "3f2be58a-18d4-4e27-8402-53a76b5c748f",
+            "name": "Gargoyle",
+            "isPC": false,
+            "thac0": 16,
+            "armorClass": 5,
+            "hitDice": "4d8",
+            "hpFull": 18,
+            "damageRolls": "d3 | d3 | d6 | d4",
+            "size": "M",
+            "xp": 175
+        },
+        {
+            "id": "2611e7bf-10c5-43d2-bff6-991439c134b3",
+            "name": "Gelatinous Cube",
+            "isPC": false,
+            "thac0": 17,
+            "armorClass": 8,
+            "hitDice": "4d8",
+            "hpFull": 0,
+            "damageRolls": "2d4",
+            "specialAttacks": "Paralyzation 5d4, Surprise(-3)",
+            "xp": 0
+        },
+        {
+            "id": "db206b72-1ac2-4449-9a6d-4872e2e2b3bf",
+            "name": "Gelatinous Cube (Dead)",
+            "isPC": false,
+            "thac0": 20,
+            "armorClass": 8,
+            "hitDice": "4d8",
+            "hpFull": 0,
+            "damageRolls": "d3",
+            "specialAttacks": "Residual acid",
+            "xp": 0
+        },
+        {
+            "id": "d39da60e-98c1-41b3-9ec3-3ce947769f6e",
+            "name": "Ghoul",
+            "isPC": false,
+            "thac0": 18,
+            "armorClass": 6,
+            "hitDice": "2d8",
+            "hpFull": 9,
+            "damageRolls": "d3 | d3 | d6",
+            "specialAttacks": "Paralysis Touch",
+            "xp": 35
+        },
+        {
+            "id": "8f774a7f-2850-404c-ac5a-f3d32650d9a0",
+            "name": "Giant Spider",
+            "isPC": false,
+            "thac0": 16,
+            "armorClass": 6,
+            "hitDice": "4d8+4",
+            "hpFull": 22,
+            "damageRolls": "d8",
+            "specialAttacks": "Web & Poison",
+            "size": "L",
+            "xp": 175
+        },
+        {
+            "id": "ee3095f3-abdd-4630-8f50-b11956814a6c",
+            "name": "Giant Wolf Spider",
+            "isPC": false,
+            "thac0": 17,
+            "armorClass": 4,
+            "hitDice": "3d8",
+            "hpFull": 14,
+            "damageRolls": "d6",
+            "specialDetections": "Wall climbing",
+            "specialAttacks": "Poison (save vs poison or die)",
+            "xp": 0
+        },
+        {
+            "id": "b41ffecd-cd19-4e0f-9827-818ed22cbbbb",
+            "name": "Gideon",
+            "isPC": true,
+            "classLevels": "Thief 4",
+            "thac0": 19,
+            "armorClass": 6,
+            "hitDice": "4d6+4",
+            "hpFull": 18,
+            "damageRolls": "d6+1",
+            "xp": 0
+        },
+        {
+            "id": "52aa1009-0b7d-4ffc-baf5-5a91e73c6eb7",
+            "name": "Gnoll",
+            "isPC": false,
+            "thac0": 18,
+            "armorClass": 5,
+            "hitDice": "2d8",
+            "hpFull": 9,
+            "damageRolls": "2d4",
+            "movement": "90' (30')",
+            "size": "M",
+            "xp": 35
+        },
+        {
+            "id": "5cae9981-005d-4a66-87d5-ce0be0546c68",
+            "name": "Goblin",
+            "isPC": false,
+            "thac0": 20,
+            "armorClass": 6,
+            "hitDice": "d6",
+            "hpFull": 4,
+            "damageRolls": "d6",
+            "movement": "90' (30')",
+            "size": "S",
+            "xp": 10
+        },
+        {
+            "id": "05ed8111-347f-4f65-8780-0b7757adb732",
+            "name": "Goblin, Boss",
+            "isPC": false,
+            "thac0": 17,
+            "armorClass": 4,
+            "hitDice": "3d8",
+            "hpFull": 16,
+            "damageRolls": "d8",
+            "specialDetections": "Infravision",
+            "xp": 0
+        },
+        {
+            "id": "d4e2dd3d-c589-4ae6-8993-f83eb7bd6888",
+            "name": "Goblin, Cleric of Maglubiyet",
+            "isPC": false,
+            "classLevels": "Cleric 2",
+            "thac0": 20,
+            "armorClass": 7,
+            "hitDice": "2d8",
+            "hpFull": 9,
+            "damageRolls": "d6",
+            "specialDetections": "Infravision",
+            "specialAttacks": "Spells: bless, bane, cause fear",
+            "xp": 0
+        },
+        {
+            "id": "f6f3a0f8-8f21-4daa-8434-351f0c1a6f86",
+            "name": "Gorgon",
+            "isPC": false,
+            "thac0": 12,
+            "armorClass": 2,
+            "hitDice": "8d8",
+            "hpFull": 36,
+            "damageRolls": "2d6",
+            "specialAttacks": "Petrifying Breath",
+            "size": "L",
+            "xp": 1200
+        },
+        {
+            "id": "05700151-5540-4e15-b3ce-59ab0ff642d1",
+            "name": "Gray Ooze",
+            "isPC": false,
+            "thac0": 17,
+            "armorClass": 8,
+            "hitDice": "3d8",
+            "hpFull": 14,
+            "damageRolls": "2d8",
+            "specialAttacks": "Corrodes Metal",
+            "xp": 75
+        },
+        {
+            "id": "61af4634-2702-40fa-ac63-d7f7c867cc3f",
+            "name": "Green Hag",
+            "isPC": false,
+            "thac0": 11,
+            "armorClass": 0,
+            "hitDice": "9d8",
+            "hpFull": 41,
+            "damageRolls": "d2 | d2",
+            "specialDetections": "Invisibility & Mimicry",
+            "xp": 1400
+        },
+        {
+            "id": "7c418f00-a7b9-4b75-989c-f9716e73b17a",
+            "name": "Griffon",
+            "isPC": false,
+            "thac0": 13,
+            "armorClass": 3,
+            "hitDice": "7d8",
+            "hpFull": 32,
+            "damageRolls": "d4 | d4 | 2d6",
+            "movement": "120', Fl 360'",
+            "size": "L",
+            "xp": 650
+        },
+        {
+            "id": "77f70ea0-d00e-446d-b33f-6f4b17e12fa7",
+            "name": "Halrog",
+            "isPC": true,
+            "classLevels": "Barbarian 3",
+            "thac0": 18,
+            "armorClass": 6,
+            "hitDice": "3d12+6",
+            "hpFull": 26,
+            "damageRolls": "2d4+2",
+            "xp": 0
+        },
+        {
+            "id": "19a9302d-f0d0-485f-b0a5-24f69421aa5b",
+            "name": "Harpy",
+            "isPC": false,
+            "thac0": 17,
+            "armorClass": 7,
+            "hitDice": "3d8",
+            "hpFull": 14,
+            "damageRolls": "d4 | d4 | d6",
+            "specialAttacks": "Charming Song",
+            "xp": 75
+        },
+        {
+            "id": "1082e6cd-eac6-421e-b5ba-0473335cf885",
+            "name": "Hell Hound",
+            "isPC": false,
+            "thac0": 15,
+            "armorClass": 4,
+            "hitDice": "5d8",
+            "hpFull": 23,
+            "damageRolls": "d10",
+            "specialAttacks": "Fire Breath",
+            "xp": 350
+        },
+        {
+            "id": "2e9b4ad2-cc28-464c-bfd2-b2f0428245aa",
+            "name": "Hobgoblin",
+            "isPC": false,
+            "thac0": 19,
+            "armorClass": 5,
+            "hitDice": "d8+1",
+            "hpFull": 6,
+            "damageRolls": "d8",
+            "movement": "90' (30')",
+            "size": "M",
+            "xp": 20
+        },
+        {
+            "id": "3858d221-33f9-4035-9dc1-5c5c736d0c6b",
+            "name": "Hydra",
+            "isPC": false,
+            "thac0": 12,
+            "armorClass": 5,
+            "hitDice": "8d8",
+            "hpFull": 36,
+            "damageRolls": "d10 | d10 | d10 | d10 | d10",
+            "size": "L",
+            "xp": 1200
+        },
+        {
+            "id": "f0ed7aec-0371-49af-ad93-458cf278e287",
+            "name": "Isolde",
+            "isPC": true,
+            "classLevels": "Druid 3",
+            "thac0": 18,
+            "armorClass": 7,
+            "hitDice": "3d8+3",
+            "hpFull": 16,
+            "damageRolls": "d6",
+            "xp": 0
+        },
+        {
+            "id": "6dc392c1-3f09-45b7-bd9a-dfafc7b03a74",
+            "name": "Kaldor Brightring",
+            "isPC": true,
+            "classLevels": "C2",
+            "thac0": 20,
+            "armorClass": 4,
+            "hpFull": 9,
+            "xp": 0
+        },
+        {
+            "id": "9ad6d9fc-9cd6-45b4-a9f1-b5a3cf239beb",
+            "name": "Kobold",
+            "isPC": false,
+            "thac0": 20,
+            "armorClass": 7,
+            "hitDice": "d4",
+            "hpFull": 3,
+            "damageRolls": "d4",
+            "movement": "90' (30')",
+            "size": "S",
+            "xp": 5
+        },
+        {
+            "id": "d258a21b-e2c7-400d-aaae-846d8a362f51",
+            "name": "Lich",
+            "isPC": false,
+            "thac0": 9,
+            "armorClass": 0,
+            "hitDice": "11d8",
+            "hpFull": 50,
+            "damageRolls": "d10",
+            "specialAttacks": "Paralytic Touch & Spells",
+            "xp": 5000
+        },
+        {
+            "id": "d85d26bc-7fc6-4f10-b619-ea1345207812",
+            "name": "Lizardfolk",
+            "isPC": false,
+            "thac0": 18,
+            "armorClass": 5,
+            "hitDice": "2d8+1",
+            "hpFull": 10,
+            "damageRolls": "d6 | d6 | d8",
+            "movement": "60', Sw 120'",
+            "size": "M",
+            "xp": 35
+        },
+        {
+            "id": "1380bc0c-fd43-4ba0-9876-0bdf6a2792ff",
+            "name": "Manticore",
+            "isPC": false,
+            "thac0": 13,
+            "armorClass": 4,
+            "hitDice": "6d8+3",
+            "hpFull": 30,
+            "damageRolls": "d3 | d3 | d8 | d6",
+            "specialAttacks": "Tail Spikes",
+            "size": "L",
+            "xp": 650
+        },
+        {
+            "id": "1694861b-342a-4977-800b-1d7d38ffbed4",
+            "name": "Minotaur",
+            "isPC": false,
+            "thac0": 14,
+            "armorClass": 6,
+            "hitDice": "6d8",
+            "hpFull": 27,
+            "damageRolls": "d4 | d8",
+            "movement": "120' (40')",
+            "size": "L",
+            "xp": 500
+        },
+        {
+            "id": "72cc3e25-d4a2-4f84-87e4-50e4ecd40f97",
+            "name": "Mummy",
+            "isPC": false,
+            "thac0": 13,
+            "armorClass": 3,
+            "hitDice": "6d8+3",
+            "hpFull": 30,
+            "damageRolls": "d12",
+            "specialAttacks": "Mummy Rot & Dread",
+            "size": "M",
+            "xp": 950
+        },
+        {
+            "id": "afca8ce8-7706-426a-b55c-a163d5574916",
+            "name": "Nightmare",
+            "isPC": false,
+            "thac0": 13,
+            "armorClass": -2,
+            "hitDice": "6d8+6",
+            "hpFull": 33,
+            "damageRolls": "2d4 | 2d4 | d8",
+            "specialDetections": "Etherealness",
+            "size": "L",
+            "xp": 1000
+        },
+        {
+            "id": "51f955ef-1b80-4816-94c3-f8b2398b7d70",
+            "name": "Ogre",
+            "isPC": false,
+            "thac0": 15,
+            "armorClass": 5,
+            "hitDice": "4d8+1",
+            "hpFull": 19,
+            "damageRolls": "d10+6",
+            "movement": "90' (30')",
+            "size": "L",
+            "specialAttacks": "Huge club",
+            "xp": 125
+        },
+        {
+            "id": "5def5573-4b6d-45ad-89ea-65976f2114fd",
+            "name": "Orc",
+            "isPC": false,
+            "thac0": 19,
+            "armorClass": 6,
+            "hitDice": "d8",
+            "hpFull": 5,
+            "damageRolls": "d6",
+            "movement": "120' (40')",
+            "size": "M",
+            "xp": 10
+        },
+        {
+            "id": "73e18d25-f9ce-4acc-9522-4d2a40799a72",
+            "name": "Owlbear",
+            "isPC": false,
+            "thac0": 15,
+            "armorClass": 5,
+            "hitDice": "5d8+2",
+            "hpFull": 25,
+            "damageRolls": "d6, d6, 2d6",
+            "specialAttacks": "Hug Attack",
+            "size": "L",
+            "xp": 350
+        },
+        {
+            "id": "194e38e4-3906-4565-bc6e-f2ba1a310f0b",
+            "name": "Rust Monster",
+            "isPC": false,
+            "thac0": 15,
+            "armorClass": 2,
+            "hitDice": "5d8",
+            "hpFull": 23,
+            "damageRolls": "0",
+            "specialAttacks": "Rust Touch",
+            "size": "M",
+            "xp": 350
+        },
+        {
+            "id": "74b4bae7-541f-48b2-bd0b-6fe4c0d21b5d",
+            "name": "Shadow",
+            "isPC": false,
+            "thac0": 17,
+            "armorClass": 7,
+            "hitDice": "3d8+3",
+            "hpFull": 16,
+            "damageRolls": "d4+1",
+            "specialAttacks": "Strength Drain",
+            "xp": 125
+        },
+        {
+            "id": "19cfc4e7-4617-4324-afc6-836e38537707",
+            "name": "Skeleton",
+            "isPC": false,
+            "thac0": 20,
+            "armorClass": 7,
+            "hitDice": "d8",
+            "hpFull": 4,
+            "damageRolls": "d6",
+            "movement": "120' (40')",
+            "size": "M",
+            "xp": 10
+        },
+        {
+            "id": "1ec4681d-569c-4f91-889b-12159d542940",
+            "name": "Skeleton, Dwarf",
+            "isPC": false,
+            "thac0": 19,
+            "armorClass": 7,
+            "hitDice": "d8",
+            "hpFull": 6,
+            "damageRolls": "d6",
+            "specialDetections": "Undead immunities",
+            "xp": 0
+        },
+        {
+            "id": "00fad98d-56fd-4580-8e8a-52b668ba2d0e",
+            "name": "Skeleton, Dwarven Captain",
+            "isPC": false,
+            "thac0": 17,
+            "armorClass": 4,
+            "hitDice": "3d8",
+            "hpFull": 18,
+            "damageRolls": "d8",
+            "specialDetections": "Undead immunities",
+            "specialAttacks": "Elite discipline",
+            "xp": 0
+        },
+        {
+            "id": "dfacdd70-4695-423b-896c-998242db0419",
+            "name": "Spectre",
+            "isPC": false,
+            "thac0": 13,
+            "armorClass": 2,
+            "hitDice": "7d8",
+            "hpFull": 32,
+            "damageRolls": "d8",
+            "specialAttacks": "Energy Drain 2 Levels",
+            "xp": 1600
+        },
+        {
+            "id": "8e1a389b-077a-4f43-87c8-74f7867b16eb",
+            "name": "Spider, Giant Wolf",
+            "isPC": false,
+            "thac0": 17,
+            "armorClass": 4,
+            "hitDice": "3d8+3",
+            "hpFull": 14,
+            "damageRolls": "d8",
+            "specialDetections": "Wall climbing",
+            "specialAttacks": "Poison (save vs poison or die)",
+            "xp": 0
+        },
+        {
+            "id": "159b1879-ba03-48c8-a9a9-c1209be8bc05",
+            "name": "Stirge",
+            "isPC": false,
+            "thac0": 17,
+            "armorClass": 8,
+            "hitDice": "d8+1",
+            "hpFull": 7,
+            "damageRolls": "d3",
+            "specialAttacks": "Blood drain,d4->12",
+            "xp": 0
+        },
+        {
+            "id": "fe7b0cb6-1ec5-498c-8c88-ed696da460b8",
+            "name": "Swarm of Bats",
+            "isPC": false,
+            "thac0": 19,
+            "armorClass": 6,
+            "hitDice": "2d8",
+            "hpFull": 9,
+            "damageRolls": "d6",
+            "specialDetections": "Blindsight",
+            "specialAttacks": "Distraction",
+            "xp": 0
+        },
+        {
+            "id": "8b4743ed-8283-40c8-a455-01414137e796",
+            "name": "Tesara",
+            "isPC": true,
+            "classLevels": "T2",
+            "thac0": 20,
+            "armorClass": 8,
+            "hpFull": 9,
+            "xp": 0
+        },
+        {
+            "id": "63253f73-6625-4206-aaea-9b14833d14c7",
+            "name": "Torarinn Flametongue",
+            "isPC": false,
+            "thac0": 11,
+            "armorClass": 1,
+            "hitDice": "6d12",
+            "hpFull": 42,
+            "damageRolls": "d12",
+            "specialDetections": "Undead immunities",
+            "specialAttacks": "Fear aura",
+            "xp": 0
+        },
+        {
+            "id": "dda9cd1c-ad4a-4f89-9d9a-88acc275481d",
+            "name": "Treant",
+            "isPC": false,
+            "thac0": 10,
+            "armorClass": 2,
+            "hitDice": "10d8",
+            "hpFull": 45,
+            "damageRolls": "2d6 | 2d6",
+            "size": "L",
+            "xp": 3000
+        },
+        {
+            "id": "8871cddf-8510-4888-845f-f454b6645679",
+            "name": "Troll",
+            "isPC": false,
+            "thac0": 13,
+            "armorClass": 4,
+            "hitDice": "6d8+6",
+            "hpFull": 33,
+            "damageRolls": "d6 | d6 | d10",
+            "specialDetections": "Regeneration 3HP",
+            "size": "L",
+            "xp": 650
+        },
+        {
+            "id": "4f1087e5-ca03-4555-9959-21859a86a3b1",
+            "name": "Vampire",
+            "isPC": false,
+            "thac0": 11,
+            "armorClass": 1,
+            "hitDice": "8d8",
+            "hpFull": 36,
+            "damageRolls": "d10",
+            "specialAttacks": "Energy Drain & Charm",
+            "size": "M",
+            "xp": 2000
+        },
+        {
+            "id": "af802a4e-d6ed-4b1b-9725-c6e0b05ca398",
+            "name": "Wight",
+            "isPC": false,
+            "thac0": 16,
+            "armorClass": 5,
+            "hitDice": "4d8",
+            "hpFull": 18,
+            "damageRolls": "d4",
+            "specialAttacks": "Energy Drain 1 Level",
+            "xp": 175
+        },
+        {
+            "id": "64fd4cd9-7905-4fbf-82de-3adedcfdd338",
+            "name": "Will-o'-Wisp",
+            "isPC": false,
+            "thac0": 11,
+            "armorClass": -8,
+            "hitDice": "9d8",
+            "hpFull": 41,
+            "damageRolls": "2d8",
+            "specialDetections": "Invisibility & Shock",
+            "size": "S",
+            "xp": 2000
+        },
+        {
+            "id": "f2fef35a-b160-40cc-a2cf-a0c4e09463de",
+            "name": "Wyvern",
+            "isPC": false,
+            "thac0": 13,
+            "armorClass": 3,
+            "hitDice": "7d8",
+            "hpFull": 32,
+            "damageRolls": "2d8 | d6",
+            "specialAttacks": "Poison Tail",
+            "size": "L",
+            "xp": 950
+        },
+        {
+            "id": "c917d65c-db52-485b-8d5e-85796c3ab4dd",
+            "name": "Zindra Winterbow",
+            "isPC": true,
+            "classLevels": "R5",
+            "thac0": 15,
+            "armorClass": 5,
+            "hitDice": "d10",
+            "hpFull": 38,
+            "damageRolls": "2xd6 l  d8 l  d6",
+            "specialAttacks": "point blank +2",
+            "xp": 0
+        },
+        {
+            "id": "77fcbdd0-e007-431d-8f2a-2aa22b1bd7fd",
+            "name": "Zombie",
+            "isPC": false,
+            "thac0": 19,
+            "armorClass": 8,
+            "hitDice": "2d8",
+            "hpFull": 9,
+            "damageRolls": "d8",
+            "movement": "60' (20')",
+            "size": "M",
+            "xp": 20
+        }
+    ],
+    "parties": [
+        {
+            "id": "3b7ec87a-4b1d-4bb9-bb27-1405351ac633",
+            "name": "3 Stirges",
+            "isActive": false,
+            "members": [
+                {
+                    "memberId": "159b1879-ba03-48c8-a9a9-c1209be8bc05",
+                    "name": "Stirge",
+                    "hpCurrent": 3,
+                    "hpFull": 3,
+                    "cloneTag": "a"
+                },
+                {
+                    "memberId": "159b1879-ba03-48c8-a9a9-c1209be8bc05",
+                    "name": "Stirge",
+                    "hpCurrent": 3,
+                    "hpFull": 3,
+                    "cloneTag": "b"
+                },
+                {
+                    "memberId": "159b1879-ba03-48c8-a9a9-c1209be8bc05",
+                    "name": "Stirge",
+                    "hpCurrent": 3,
+                    "hpFull": 3,
+                    "cloneTag": "c"
+                }
+            ]
+        },
+        {
+            "id": "b16423f5-179d-4c78-9b6c-e18e4049b4c2",
+            "name": "Bat, Swarm",
+            "isActive": true,
+            "members": [
+                {
+                    "memberId": "228b7dd5-96b5-400c-84d4-29a9e2bba944",
+                    "name": "Bat",
+                    "hpCurrent": 2,
+                    "hpFull": 2
+                }
+            ]
+        },
+        {
+            "id": "b63c064a-5685-406a-9b67-19105b0cff6e",
+            "name": "Gelatinous Cube (Dead)",
+            "isActive": false,
+            "members": [
+                {
+                    "memberId": "db206b72-1ac2-4449-9a6d-4872e2e2b3bf",
+                    "name": "Gelatinous Cube (Dead)",
+                    "hpCurrent": 0,
+                    "hpFull": 0
+                }
+            ]
+        },
+        {
+            "id": "c4bb113a-a9b1-4cd0-9712-2770a8e9a480",
+            "name": "Goblin, Cleric and Retinue",
+            "isActive": false,
+            "members": [
+                {
+                    "memberId": "5cae9981-005d-4a66-87d5-ce0be0546c68",
+                    "name": "Goblin",
+                    "hpCurrent": 5,
+                    "hpFull": 5,
+                    "cloneTag": "b"
+                },
+                {
+                    "memberId": "5cae9981-005d-4a66-87d5-ce0be0546c68",
+                    "name": "Goblin",
+                    "hpCurrent": 5,
+                    "hpFull": 5,
+                    "cloneTag": "c"
+                },
+                {
+                    "memberId": "5cae9981-005d-4a66-87d5-ce0be0546c68",
+                    "name": "Goblin",
+                    "hpCurrent": 5,
+                    "hpFull": 5,
+                    "cloneTag": "d"
+                },
+                {
+                    "memberId": "5cae9981-005d-4a66-87d5-ce0be0546c68",
+                    "name": "Goblin",
+                    "hpCurrent": 5,
+                    "hpFull": 5,
+                    "cloneTag": "e"
+                },
+                {
+                    "memberId": "5cae9981-005d-4a66-87d5-ce0be0546c68",
+                    "name": "Goblin",
+                    "hpCurrent": 5,
+                    "hpFull": 5,
+                    "cloneTag": "f"
+                },
+                {
+                    "memberId": "05ed8111-347f-4f65-8780-0b7757adb732",
+                    "name": "Goblin, Boss",
+                    "hpCurrent": 16,
+                    "hpFull": 16,
+                    "cloneTag": "a"
+                },
+                {
+                    "memberId": "d4e2dd3d-c589-4ae6-8993-f83eb7bd6888",
+                    "name": "Goblin, Cleric of Maglubiyet",
+                    "hpCurrent": 9,
+                    "hpFull": 9
+                }
+            ]
+        },
+        {
+            "id": "87681a83-24e1-45fc-9933-bbecbebf762a",
+            "name": "Goblins Scouts",
+            "isActive": false,
+            "members": [
+                {
+                    "memberId": "5cae9981-005d-4a66-87d5-ce0be0546c68",
+                    "name": "Goblin",
+                    "hpCurrent": 5,
+                    "hpFull": 5,
+                    "cloneTag": "a"
+                },
+                {
+                    "memberId": "5cae9981-005d-4a66-87d5-ce0be0546c68",
+                    "name": "Goblin",
+                    "hpCurrent": 5,
+                    "hpFull": 5,
+                    "cloneTag": "b"
+                },
+                {
+                    "memberId": "5cae9981-005d-4a66-87d5-ce0be0546c68",
+                    "name": "Goblin",
+                    "hpCurrent": 5,
+                    "hpFull": 5,
+                    "cloneTag": "c"
+                },
+                {
+                    "memberId": "5cae9981-005d-4a66-87d5-ce0be0546c68",
+                    "name": "Goblin",
+                    "hpCurrent": 5,
+                    "hpFull": 5,
+                    "cloneTag": "d"
+                },
+                {
+                    "memberId": "5cae9981-005d-4a66-87d5-ce0be0546c68",
+                    "name": "Goblin",
+                    "hpCurrent": 5,
+                    "hpFull": 5,
+                    "cloneTag": "e"
+                },
+                {
+                    "memberId": "05ed8111-347f-4f65-8780-0b7757adb732",
+                    "name": "Goblin, Boss",
+                    "hpCurrent": 16,
+                    "hpFull": 16,
+                    "cloneTag": "f"
+                }
+            ]
+        },
+        {
+            "id": "9c11b198-4708-4653-8137-179dc7458885",
+            "name": "LostTombOfTheDwarvenPrince",
+            "isActive": true,
+            "members": [
+                {
+                    "memberId": "a51fe239-9d31-4bb8-a226-026e54d67aa6",
+                    "name": "Aiger Akbane",
+                    "hpCurrent": 22,
+                    "hpFull": 18
+                },
+                {
+                    "memberId": "06855746-f32d-4fdf-a56e-4a92b6e852cf",
+                    "name": "Bran Helder",
+                    "hpCurrent": 20,
+                    "hpFull": 20
+                },
+                {
+                    "memberId": "6dc392c1-3f09-45b7-bd9a-dfafc7b03a74",
+                    "name": "Kaldor Brightring",
+                    "hpCurrent": 9,
+                    "hpFull": 9
+                },
+                {
+                    "memberId": "7e79fcca-1eb8-4f29-a525-8c40854888c1",
+                    "name": "Caldus 'Sparrowbone' Marr",
+                    "hpCurrent": 4,
+                    "hpFull": 4
+                },
+                {
+                    "memberId": "8b4743ed-8283-40c8-a455-01414137e796",
+                    "name": "Tesara",
+                    "hpCurrent": 9,
+                    "hpFull": 9
+                },
+                {
+                    "memberId": "c917d65c-db52-485b-8d5e-85796c3ab4dd",
+                    "name": "Zindra Winterbow",
+                    "hpCurrent": 38,
+                    "hpFull": 38
+                }
+            ]
+        },
+        {
+            "id": "8827d454-65b2-423a-ac1a-6ddbb081c5b9",
+            "name": "Skeletons, 4 Captains",
+            "isActive": true,
+            "members": [
+                {
+                    "memberId": "00fad98d-56fd-4580-8e8a-52b668ba2d0e",
+                    "name": "Skeleton, Dwarven Captain",
+                    "hpCurrent": 18,
+                    "hpFull": 0,
+                    "cloneTag": "a"
+                },
+                {
+                    "memberId": "00fad98d-56fd-4580-8e8a-52b668ba2d0e",
+                    "name": "Skeleton, Dwarven Captain",
+                    "hpCurrent": 18,
+                    "hpFull": 0,
+                    "cloneTag": "b"
+                },
+                {
+                    "memberId": "00fad98d-56fd-4580-8e8a-52b668ba2d0e",
+                    "name": "Skeleton, Dwarven Captain",
+                    "hpCurrent": 18,
+                    "hpFull": 0,
+                    "cloneTag": "c"
+                },
+                {
+                    "memberId": "00fad98d-56fd-4580-8e8a-52b668ba2d0e",
+                    "name": "Skeleton, Dwarven Captain",
+                    "hpCurrent": 18,
+                    "hpFull": 0,
+                    "cloneTag": "d"
+                }
+            ]
+        },
+        {
+            "id": "3bff3e0b-dc36-4ba6-ad27-e419b8ab4654",
+            "name": "Skeletons-01",
+            "isActive": false,
+            "members": [
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "a"
+                }
+            ]
+        },
+        {
+            "id": "16000a2c-34bd-457f-8ad1-a1bcc86ae299",
+            "name": "Skeletons-02",
+            "isActive": false,
+            "members": [
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "a"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 1,
+                    "hpFull": 6,
+                    "cloneTag": "b"
+                }
+            ]
+        },
+        {
+            "id": "0dedbb0d-23a1-4863-a8c9-6040aa5c3e79",
+            "name": "Skeletons-04",
+            "isActive": false,
+            "members": [
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "a"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "b"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "c"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "d"
+                }
+            ]
+        },
+        {
+            "id": "23abf9f7-198e-4bcc-aadb-68caf2465d49",
+            "name": "Skeletons-08",
+            "isActive": false,
+            "members": [
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "a"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "b"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "c"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "d"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "e"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "f"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "g"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "h"
+                }
+            ]
+        },
+        {
+            "id": "7e838c12-9a6c-421e-85ef-63bd688136ef",
+            "name": "Skeletons-16",
+            "isActive": false,
+            "members": [
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "a"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "b"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "c"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "d"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "e"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "f"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "g"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "h"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "i"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "j"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "k"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "l"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "m"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "n"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "o"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "p"
+                }
+            ]
+        },
+        {
+            "id": "1bba4f74-386f-4851-ba2d-a72a5ed795ab",
+            "name": "Skeletons-32",
+            "isActive": false,
+            "members": [
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "a"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "b"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "c"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "d"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "e"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "f"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "g"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "h"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "i"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "j"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "k"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "l"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "m"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "n"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "o"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "p"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "q"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "r"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "s"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "t"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "u"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "v"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "w"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "x"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "y"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "z"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "0"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "1"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "2"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "3"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "4"
+                },
+                {
+                    "memberId": "1ec4681d-569c-4f91-889b-12159d542940",
+                    "name": "Skeleton, Dwarf",
+                    "hpCurrent": 6,
+                    "hpFull": 6,
+                    "cloneTag": "5"
+                }
+            ]
+        },
+        {
+            "id": "736e4493-6492-4a2e-b30c-ef59b794f467",
+            "name": "The Ogres",
+            "isActive": false,
+            "members": [
+                {
+                    "memberId": "51f955ef-1b80-4816-94c3-f8b2398b7d70",
+                    "name": "Ogre (Leappaloode)",
+                    "hpCurrent": 28,
+                    "hpFull": 28,
+                    "cloneTag": "a"
+                },
+                {
+                    "memberId": "51f955ef-1b80-4816-94c3-f8b2398b7d70",
+                    "name": "Ogre, Daughter",
+                    "hpCurrent": 22,
+                    "hpFull": 22,
+                    "cloneTag": "b"
+                }
+            ]
+        },
+        {
+            "id": "036d4380-4175-4af5-b90f-16df662cce55",
+            "name": "Torarinn Flametongue",
+            "isActive": false,
+            "members": [
+                {
+                    "memberId": "63253f73-6625-4206-aaea-9b14833d14c7",
+                    "name": "Torarinn Flametongue",
+                    "hpCurrent": 42,
+                    "hpFull": 42
+                }
+            ]
+        }
+    ]
+}

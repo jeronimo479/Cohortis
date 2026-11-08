@@ -18,9 +18,17 @@ class PartyFragment : Fragment() {
     private val binding get() = _binding!!
     private lateinit var partyAdapter: PartyAdapter
 
+    private var pendingSetup: (() -> Unit)? = null
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentPartyBinding.inflate(inflater, container, false)
         return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        pendingSetup?.invoke()
+        pendingSetup = null
     }
 
     /**
@@ -34,24 +42,30 @@ class PartyFragment : Fragment() {
         onDamageTapped: (Member, String) -> Int,
         onMemberLongTapped: (PartyMember, Member, Party) -> Unit,
         onOpenPartyLibrary: (Party?) -> Unit,
-        onPartyRenameRequested: (Party) -> Unit,
         onOpenMemberLibrary: (Party) -> Unit,
         onCreateMemberRequested: (Party) -> Unit
     ) {
-        partyAdapter = PartyAdapter(
-            parties, 
-            getTemplate,
-            onHpChanged,
-            onHpComplete,
-            onDamageTapped, 
-            onMemberLongTapped,
-            { party -> onOpenPartyLibrary(party) },
-            onPartyRenameRequested,
-            onOpenMemberLibrary,
-            onCreateMemberRequested
-        )
-        binding.rvParties.layoutManager = LinearLayoutManager(context)
-        binding.rvParties.adapter = partyAdapter
+        val action = {
+            partyAdapter = PartyAdapter(
+                parties, 
+                getTemplate,
+                onHpChanged,
+                onHpComplete,
+                onDamageTapped, 
+                onMemberLongTapped,
+                { party -> onOpenPartyLibrary(party) },
+                onOpenMemberLibrary,
+                onCreateMemberRequested
+            )
+            binding.rvParties.layoutManager = LinearLayoutManager(context)
+            binding.rvParties.adapter = partyAdapter
+        }
+
+        if (_binding != null) {
+            action()
+        } else {
+            pendingSetup = action
+        }
     }
 
     /**

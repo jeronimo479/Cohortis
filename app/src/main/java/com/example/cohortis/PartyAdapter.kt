@@ -21,7 +21,6 @@ class PartyAdapter(
     private val onDamageTapped: (Member, String) -> Int,
     private val onMemberLongTapped: (PartyMember, Member, Party) -> Unit,
     private val onOpenPartyEdit: (Party) -> Unit,
-    private val onPartyRenameRequested: (Party) -> Unit,
     private val onOpenMemberLibrary: (Party) -> Unit,
     private val onCreateMemberRequested: (Party) -> Unit
 ) : RecyclerView.Adapter<PartyAdapter.PartyViewHolder>() {

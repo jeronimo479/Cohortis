@@ -1,5 +1,6 @@
 package com.example.cohortis
 
+import com.google.gson.annotations.SerializedName
 import java.util.UUID
 
 /**
@@ -8,10 +9,11 @@ import java.util.UUID
  * Actual current HP and clone tags are tracked per party instance.
  */
 data class Member(
+    /** The alias/name of the member. Serialized first as alias. Accepts alias, _name_, name on import. */
+    @SerializedName("alias", alternate = ["_name_", "name"])
+    var name: String = "",
     /** Unique identifier for the member template. */
     var id: UUID = UUID.randomUUID(),
-    /** The name of the member. */
-    var name: String = "",
     /** Whether the member is a Player Character (PC). Affects UI display and logic. */
     var isPC: Boolean = false,
     /** Description of class and levels (for PCs) or other identifying info. */
@@ -27,13 +29,13 @@ data class Member(
     /** String representing damage rolls, e.g., "1d6 | 1d4". */
     var damageRolls: String = "",
     /** Special detection abilities (e.g., "Detect Traps 30%"). */
-    var specialDetections: String? = null,
+    var specialDetections: String = "",
     /** Special attack descriptions or modifiers. */
-    var specialAttacks: String? = null,
+    var specialAttacks: String = "",
     /** Movement speed or mode, e.g., "120' (40')", "9, Fl 18". */
-    var movement: String? = null,
+    var movement: String = "",
     /** Size category, e.g., "M", "L (10' tall)". */
-    var size: String? = null,
+    var size: String = "",
     /** Experience point value for defeating this member (for NPCs). */
     var xp: Int = 0
 
@@ -41,10 +43,10 @@ data class Member(
     /**
      * Checks if the member has any special detections or attacks defined.
      *
-     * @return True if either [specialDetections] or [specialAttacks] is not blank.
+     * @return True if any special field is not blank.
      */
     fun hasSpecial(): Boolean {
-        return !specialDetections.isNullOrBlank() || !specialAttacks.isNullOrBlank() || !movement.isNullOrBlank() || !size.isNullOrBlank()
+        return specialDetections.isNotBlank() || specialAttacks.isNotBlank() || movement.isNotBlank() || size.isNotBlank()
     }
 
     /**

@@ -1,0 +1,165 @@
+{
+  "version": 2,
+  "priorityPartyId": "036d4380-4175-4af5-b90f-16df662cce55",
+  "members": [
+    {
+      "id": "42c64059-ddad-4f0e-9d3f-ae574dbd1b9f",
+      "name": "Goblin Spearman",
+      "isPC": false,
+      "classLevels": "",
+      "thac0": 20,
+      "armorClass": 6,
+      "hitDice": "1d6",
+      "hpFull": 4,
+      "damageRolls": "1d6",
+      "specialDetections": "Infravision 60'",
+      "specialAttacks": "-1 morale when leader dies",
+      "movement": "90' (30')",
+      "size": "S",
+      "xp": 10
+    }
+  ],
+  "parties": [
+    {
+      "id": "036d4380-4175-4af5-b90f-16df662cce55",
+      "name": "Area 2 - Guard Post",
+      "isActive": true,
+      "members": [
+        {
+          "memberId": "42c64059-ddad-4f0e-9d3f-ae574dbd1b9f",
+          "name": "Goblin Spearman",
+          "hpCurrent": 4,
+          "hpFull": 4,
+          "cloneTag": "a"
+        },
+        {
+          "memberId": "42c64059-ddad-4f0e-9d3f-ae574dbd1b9f",
+          "name": "Goblin Spearman",
+          "hpCurrent": 4,
+          "hpFull": 4,
+          "cloneTag": "b"
+        }
+      ]
+    }
+  ]
+}
+
+
+---  
+You:  
+Can you tell me what the schema is for this json, and it's verison number do that I can get another AI to collapse all mt data into a form usable by current Cohort app?
+Agent:  
+> Thought  
+> **Analyzing the Request**  
+>   
+> I'm carefully dissecting the user's query. My focus is understanding the core need: extracting the JSON schema and version to facilitate compatibility with the Cohort app. I'm pinpointing the information needed to structure the data for the new application.  
+>   
+>   
+> **Defining the Output**  
+>   
+> I've determined the exact output format needed. I will provide the JSON schema for Schema Version 2, complete with explanations for each field. I'm focusing on providing the `LibraryExport` structure, including `version`, `members`, and `parties`. The goal is to give the user the precise data structure for compatibility. I am extracting information from `DataManager.kt` and `LibraryExport` to ensure accurate representation.  
+>   
+>   
+>   
+Here is the complete **Schema Version 2** specification, field definitions, and an AI prompt you can copy-paste to convert/collapse your old JSON files.
+
+---
+
+### ?? Schema Information
+* **Schema Version**: `2`
+* **File Format**: Standard JSON (`Cohortis_Master.json`)
+
+---
+
+### ?? Schema Version 2 JSON Structure
+
+```json
+{
+  "version": 2,
+  "priorityPartyId": "036d4380-4175-4af5-b90f-16df662cce55",
+  "members": [
+    {
+      "id": "42c64059-ddad-4f0e-9d3f-ae574dbd1b9f",
+      "name": "Goblin Spearman",
+      "isPC": false,
+      "classLevels": "",
+      "thac0": 20,
+      "armorClass": 6,
+      "hitDice": "1d6",
+      "hpFull": 4,
+      "damageRolls": "1d6",
+      "specialDetections": "Infravision 60'",
+      "specialAttacks": "-1 morale when leader dies",
+      "movement": "90' (30')",
+      "size": "S",
+      "xp": 10
+    }
+  ],
+  "parties": [
+    {
+      "id": "036d4380-4175-4af5-b90f-16df662cce55",
+      "name": "Area 2 - Guard Post",
+      "isActive": true,
+      "members": [
+        {
+          "memberId": "42c64059-ddad-4f0e-9d3f-ae574dbd1b9f",
+          "name": "Goblin Spearman",
+          "hpCurrent": 4,
+          "hpFull": 4,
+          "cloneTag": "a"
+        },
+        {
+          "memberId": "42c64059-ddad-4f0e-9d3f-ae574dbd1b9f",
+          "name": "Goblin Spearman",
+          "hpCurrent": 4,
+          "hpFull": 4,
+          "cloneTag": "b"
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+### ?? Field Definitions
+
+#### 1. Top-Level Root
+* **`version`** *(Int, Required)*: Must be `2`.
+* **`priorityPartyId`** *(String/UUID, Optional)*: UUID string of the party set as priority, or `null`.
+* **`members`** *(Array, Required)*: List of master template objects.
+* **`parties`** *(Array, Required)*: List of party encounter objects.
+
+#### 2. Master Member Template (`members[]`)
+* **`id`** *(String/UUID)*: 36-character UUID string (e.g. `"42c64059-ddad-4f0e-9d3f-ae574dbd1b9f"`).
+* **`name`** *(String)*: Name of the member or monster.
+* **`isPC`** *(Boolean)*: `true` for Player Characters, `false` for Monsters/NPCs.
+* **`classLevels`** *(String)*: E.g., `"Fighter 4"` or `"Ranger 3"`.
+* **`thac0`** *(Int)*: Default `20`.
+* **`armorClass`** *(Int)*: Default `10`.
+* **`hitDice`** *(String)*: E.g. `"4d10+8"` or `"1d6"`.
+* **`hpFull`** *(Int)*: Default template max HP.
+* **`damageRolls`** *(String)*: E.g. `"1d8+2"` or `"1d6 | 1d4"`.
+* **`specialDetections`** *(String or null)*: Special senses/detections.
+* **`specialAttacks`** *(String or null)*: Special abilities or attacks.
+* **`movement`** *(String or null)*: E.g. `"120' (40')"`.
+* **`size`** *(String or null)*: E.g. `"S"`, `"M"`, `"L"`.
+* **`xp`** *(Int)*: XP value.
+
+#### 3. Party Encounter Object (`parties[]`)
+* **`id`** *(String/UUID)*: Unique UUID string for the party.
+* **`name`** *(String)*: Name of the party (e.g. `"Area 2 - Guard Post"`).
+* **`isActive`** *(Boolean)*: Whether the party is active on the main screen.
+* **`members`** *(Array)*: List of lightweight `PartyMember` instance references:
+  * **`memberId`** *(String/UUID)*: Must match the `id` of the template in top-level `members[]`.
+  * **`name`** *(String)*: Template name for cross-file reference safety.
+  * **`hpCurrent`** *(Int)*: Current HP for this specific instance.
+  * **`hpFull`** *(Int)*: Max HP override for this specific instance (or `0` to inherit template HP).
+  * **`cloneTag`** *(String)*: `"\u0000"` or `"0"` for original non-clone; `"a"`, `"b"`, `"c"`... for clones.
+
+---
+
+### ?? Copy-Paste Prompt for another AI
+
+> *"Convert the attached JSON file into Cohortis Schema Version 2 format. Set `version: 2` at the root. Deduplicate and extract all master member stat blocks into the top-level `members` array. In the `parties[].members` arrays, collapse redundant stat blocks into lightweight `PartyMember` references (`memberId`, `name`, `hpCurrent`, `hpFull`, `cloneTag`). Ensure every `PartyMember.memberId` points to the corresponding `id` in top-level `members`."*

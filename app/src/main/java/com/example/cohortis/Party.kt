@@ -1,5 +1,6 @@
 package com.example.cohortis
 
+import com.google.gson.annotations.SerializedName
 import java.util.UUID
 
 /**
@@ -7,6 +8,9 @@ import java.util.UUID
  * Tracks state that is unique to this party instance, like current HP and clone tags.
  */
 data class PartyMember(
+    /** Name/alias of the member for cross-file JSON import/export. Serialized first as alias. */
+    @SerializedName("alias", alternate = ["_name_", "name"])
+    var name: String? = null,
     /** Reference to the [Member] template ID. */
     var memberId: UUID,
     /** The current hit points of this member instance in this party. */
@@ -19,7 +23,7 @@ data class PartyMember(
 ) {
     /** Temporary storage for name during JSON import/migration to resolve ID mismatches. */
     @Transient
-    var tempName: String? = null
+    var tempName: String? = name
 
     /**
      * Returns the name of the member formatted for display.
@@ -47,14 +51,15 @@ data class PartyMember(
  * Represents a group of members.
  * Used to organize combatants or adventuring parties.
  *
+ * @property name The name/alias of the party (serialized first as alias).
  * @property id Unique identifier for the party.
- * @property name The name of the party (e.g., "The Brave Ones").
  * @property members A mutable list of [PartyMember] references belonging to this party.
  * @property isActive Whether this party is currently shown in the active view.
  */
 data class Party(
-    var id: UUID = UUID.randomUUID(),
+    @SerializedName("alias", alternate = ["_name_", "name"])
     var name: String = "",
+    var id: UUID = UUID.randomUUID(),
     val members: MutableList<PartyMember> = mutableListOf(),
     var isActive: Boolean = false
 )

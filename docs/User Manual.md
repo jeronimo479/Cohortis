@@ -1,5 +1,5 @@
 # Cohortis – User Manual (Text-Based)
-version 2026-03-27
+version 2026-10-22
 
 ## 1. Overview
 

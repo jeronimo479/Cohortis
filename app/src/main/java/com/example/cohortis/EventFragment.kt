@@ -150,7 +150,7 @@ class EventFragment : Fragment() {
             setOnClickListener {
                 AlertDialog.Builder(ctx)
                     .setTitle("Clear Log")
-                    .setMessage("Clear the current event history?")
+                    .setMessage("Clear event history log?")
                     .setPositiveButton("Clear") { _, _ ->
                         clearLog()
                         dialog.dismiss()

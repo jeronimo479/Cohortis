@@ -13,6 +13,9 @@ import android.view.inputmethod.EditorInfo
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updateLayoutParams
 import androidx.gridlayout.widget.GridLayout
 import com.example.cohortis.databinding.*
 import com.google.gson.JsonObject
@@ -87,7 +90,14 @@ class MainActivity : AppCompatActivity() {
             true
         }
 
-
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
+            val navBarBottom = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+            val extraMargin = if (navBarBottom > 0) navBarBottom else (16 * resources.displayMetrics.density).toInt()
+            binding.content.eventContainer.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                bottomMargin = extraMargin
+            }
+            insets
+        }
     }
 
     private fun setupFragments() {
